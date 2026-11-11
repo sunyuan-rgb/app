@@ -1,0 +1,20 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+vendor/
+
+# 运行时数据与本地环境
+.env
+*.log
+/data/
+/tmp/
+
+# IDE
+.idea/
+.vscode/
