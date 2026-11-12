@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>客服端 - 申诉核查</title>
+<style>
+body{font-family:system-ui,"Microsoft YaHei";max-width:960px;margin:24px auto;padding:0 16px;color:#222}
+h1{font-size:20px}h2{font-size:16px;margin-top:18px}
+.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
+select,button,input,textarea{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
+button{cursor:pointer;background:#0366d6;color:#fff;border:none}
+button.gray{background:#666}button.red{background:#cf222e}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:6px;font-size:14px}
+pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
+.st0{color:#9a6700}.st1{color:#1a7f37}.st2{color:#cf222e}
+</style>
+</head>
+<body>
+<h1><a href="/">←</a> 客服端（agent1）</h1>
+
+<div class="card">
+状态过滤：
+<select id="st"><option value="">全部</option><option value="0">待处理</option><option value="1">已补发</option><option value="2">已驳回</option></select>
+<button onclick="loadList()">刷新列表</button>
+</div>
+
+<div class="card"><h2>申诉列表</h2><div id="list"></div></div>
+<div class="card"><h2>核查详情</h2><div id="detail"><i>点击列表中的申诉</i></div></div>
+
+<script>
+const tok="agent-token-1";
+async function api(path,opts){const r=await fetch(path,{headers:{Authorization:"Bearer "+tok,...(opts||{})},...opts});return{status:r.status,body:await r.json()};}
+const stName=["<span class='st0'>待处理</span>","<span class='st1'>已补发</span>","<span class='st2'>已驳回</span>"];
+async function loadList(){const{body}=await api("/api/v1/agent/appeals?status="+document.getElementById("st").value);
+document.getElementById("list").innerHTML="<table><tr><th>ID</th><th>用户</th><th>业务日</th><th>状态</th><th>内容</th><th></th></tr>"+
+(body.appeals||[]).map(a=>`<tr><td>${a.id}</td><td>${a.user_id}</td><td>${a.biz_date}</td><td>${stName[a.status]||a.status}</td><td>${a.content}</td>
+<td><button onclick="detail(${a.id})">核查</button></td></tr>`).join("")+"</table>";}
+async function detail(id){const{status,body}=await api("/api/v1/agent/appeals/"+id);
+if(status!=200){document.getElementById("detail").innerHTML=body.error;return;}
+const d=body;
+let h=`<p>申诉 #${d.appeal.id} 用户 ${d.appeal.user_id} 业务日 ${d.appeal.biz_date} 状态 ${stName[d.appeal.status]||d.appeal.status}</p>`;
+h+=`<p>申诉内容：${d.appeal.content}</p>`;
+if(d.appeal.status==0){
+h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="rs-3-..." style="width:220px">
+文章ID <input id="aid" type="number" style="width:80px">
+发生时间 <input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
+<button onclick="compensate(${id})">补入并走统一发奖规则</button></p>`;
+h+=`<p><b>驳回</b>：<input id="concl" placeholder="驳回依据（必填）" style="width:420px">
+<button class="red" onclick="reject(${id})">驳回</button></p>`;}
+else{h+=`<p>处理结论：${d.appeal.conclusion||"-"}（操作者 #${d.appeal.operator_id}）</p>`;}
+h+=`<p>已接收事件：</p><pre>${JSON.stringify(d.accepted_events,null,1)}</pre>`;
+h+=`<p>本地进度/发奖：</p><pre>${JSON.stringify(d.progress,null,1)}${d.reward_id?" 发奖记录 #"+d.reward_id+"（"+d.reward_points+"分）":""}</pre>`;
+h+=`<p>阅读服务可信查询：${d.trusted_note?`<i>${d.trusted_note}</i>`:""}</p><pre>${d.trusted_records?JSON.stringify(d.trusted_records,null,1):""}</pre>`;
+document.getElementById("detail").innerHTML=h;}
+async function compensate(id){const o=document.getElementById("oat").value;
+const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_id:document.getElementById("eid").value,article_id:+document.getElementById("aid").value,occur_at:o})});
+alert(status==200?(body.handle_result.status+(body.resolved?"｜已结案":"")):body.error);detail(id);loadList();}
+async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+id+"/reject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conclusion:document.getElementById("concl").value})});
+alert(status==200?"已驳回":body.error);detail(id);loadList();}
+loadList();
+</script>
+</body>
+</html>

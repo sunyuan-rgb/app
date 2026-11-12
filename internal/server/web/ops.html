@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>运营端 - 活动与结算核查</title>
+<style>
+body{font-family:system-ui,"Microsoft YaHei";max-width:960px;margin:24px auto;padding:0 16px;color:#222}
+h1{font-size:20px}h2{font-size:16px;margin-top:18px}
+.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
+input,button{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
+button{cursor:pointer;background:#0366d6;color:#fff;border:none}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:6px;font-size:14px}
+pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
+.ok{color:#1a7f37}.bad{color:#cf222e}
+</style>
+</head>
+<body>
+<h1><a href="/">←</a> 运营端（ops1）</h1>
+
+<div class="card"><h2>发布活动（发布后规则固定）</h2>
+名称 <input id="name" value="每日阅读三篇文章得积分">
+开始 <input id="start" type="datetime-local" step="1">
+结束 <input id="end" type="datetime-local" step="1">
+每日门槛 <input id="th" type="number" value="3" style="width:60px">
+积分数 <input id="pts" type="number" value="30" style="width:60px">
+<button onclick="publish()">发布</button><span id="pubResult"></span></div>
+
+<div class="card"><h2>结算核查汇总</h2>
+<button onclick="loadSummary()">刷新</button>
+<div id="summary"></div></div>
+
+<script>
+const tok="ops-token-1";
+const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
+document.getElementById("start").value=today+"T00:00:00";
+document.getElementById("end").value=today+"T23:59:59";
+async function api(path,opts){const r=await fetch(path,{headers:{Authorization:"Bearer "+tok,...(opts||{})},...opts});return{status:r.status,body:await r.json()};}
+async function publish(){const s=document.getElementById("start").value,e=document.getElementById("end").value;
+const body={name:document.getElementById("name").value,start_at:s.length==19?s.replace(" ","T")+"+08:00":s,end_at:e.length==19?e.replace(" ","T")+"+08:00":e,daily_threshold:+document.getElementById("th").value,reward_points:+document.getElementById("pts").value};
+const{status,body:res}=await api("/api/v1/ops/activity",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+document.getElementById("pubResult").innerHTML=status==200?`<span class="ok">已发布 #${res.activity.id}</span>`:`<span class="bad">${status} ${res.error||""}</span>`;}
+async function loadSummary(){const{status,body}=await api("/api/v1/ops/summary");
+if(status!=200){document.getElementById("summary").innerHTML=`<span class="bad">${body.error||""}</span>`;return;}
+let h=`<p>${body.activity.name} ｜ ${body.activity.start_at} ~ ${body.activity.end_at} ｜ 门槛 ${body.activity.daily_threshold} 篇 / ${body.activity.reward_points} 分 ｜ 迟到窗口${body.window_closed?'<span class="ok">已关闭</span>':'<span class="st0">未关闭</span>'}</p>`;
+h+="<table><tr><th>业务日</th><th>达标人数</th><th>发奖人数</th><th>积分总额</th><th>待处理</th><th>已补发</th><th>已驳回</th></tr>"+
+body.days.map(d=>`<tr><td>${d.biz_date}</td><td>${d.reached_users}</td><td>${d.rewarded_users}</td><td>${d.total_points}</td><td>${d.appeals_open}</td><td>${d.appeals_compensated}</td><td>${d.appeals_rejected}</td></tr>`).join("")+"</table>";
+h+=body.inconsistencies.length?`<p class="bad">不一致项（须追溯）：</p><pre>${JSON.stringify(body.inconsistencies,null,1)}</pre>`:`<p class="ok">无不一致项</p>`;
+h+=`<p>发奖明细：</p><pre>${JSON.stringify(body.rewards,null,1)}</pre>`;
+document.getElementById("summary").innerHTML=h;}
+loadSummary();
+</script>
+</body>
+</html>

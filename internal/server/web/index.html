@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>阅读活动系统 - 题目10</title>
+<style>
+body{font-family:system-ui,"Microsoft YaHei";max-width:900px;margin:24px auto;padding:0 16px;color:#222}
+h1{font-size:22px} .card{border:1px solid #ddd;border-radius:8px;padding:16px;margin:12px 0}
+a{display:block;margin:8px 0;padding:12px;border:1px solid #ccc;border-radius:6px;text-decoration:none;color:#0366d6}
+a:hover{background:#f6f8fa}
+.role{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<h1>资讯 App 阅读活动系统</h1>
+<p class="role">题目 10：阅读活动的发布、奖励、申诉与结算核查（教学演示环境）</p>
+<div class="card">
+<a href="/user">用户端 — 查看活动 / 每日进度 / 积分流水 / 提交申诉</a>
+<a href="/agent">客服端 — 申诉列表 / 核查证据 / 驳回或补入记录</a>
+<a href="/ops">运营端 — 发布活动 / 结算核查汇总</a>
+<a href="http://localhost:8081/">模拟阅读服务 — 模拟阅读 / 异常事件触发 / 可信查询</a>
+</div>
+<p class="role">预置账号令牌见 migrations/003_users_appeal.sql；演示用教学时钟 TEACH_CLOCK_OFFSET 可加速跨日场景。</p>
+</body>
+</html>
