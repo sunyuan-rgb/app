@@ -1,0 +1,54 @@
+题目 10 必演场景演示记录（实际操作 + 持久化结果）
+执行时间：2026-11-12 09:57（北京时间，真实时钟，活动期内）
+脚本：scripts/demo_scenarios.ps1；数据库：reading_activity（容器 dev-mysql）
+
+== S2: duplicate article + duplicate event (user6) ==
+200 {"status":"accepted","biz_date":"2026-11-12","counted":true}          ← 首次投递
+200 {"status":"duplicated",...,"reason":"重复事件编号，按首次处理结果返回"}  ← 同编号同内容幂等
+200 {"status":"dup_article",...,"reason":"该文章当日已计入，不重复计数"}    ← 同文章去重
+200 {"status":"rejected",...,"reason":"事件已拒绝并留痕：超过 24 小时迟到窗口"} ← 超窗拒绝并留痕
+
+== S3: user4 2 篇有效 → 申诉 → 客服补入第 3 篇 → 发奖 ==
+200 {"status":"accepted",...}   d-s3-1 (article 41)
+200 {"status":"accepted",...}   d-s3-2 (article 42)
+200 {"id":13,"biz_date":"2026-11-12","status":"待处理"}   ← 申诉提交
+200 {"handle_result":{"status":"rewarded","biz_date":"2026-11-12","counted":true,"reward_points":30},
+     "resolved":true,"reward_id":9,
+     "txn_note":"已补入记录 d-s3-3 并发奖 30 分（reward #9），流水与余额同事务"}   ← 补入触发统一发奖
+== S3: replay same event must be idempotent ==
+200 {"status":"duplicated",...}   ← 原事件重送不重复发奖
+== S3: compensate again must be 409 ==
+409 {"error":"申诉已处理，不可重复操作"}
+== S3: user4 balance must be 30 ==
+200 {"balance":30,"txns":[{"id":9,"user_id":4,"points":30,"ref_type":"reward","ref_id":9,...}]}
+    ← 余额=流水=30，一一对应
+
+== S4: user5 仅 2 篇 → 申诉 → 驳回 → 积分不变 ==
+200 accepted d-s4-1 (article 51)
+200 accepted d-s4-2 (article 52)
+200 {"id":14,"biz_date":"2026-11-12","status":"待处理"}
+200 {"status":"rejected"}    ← 客服驳回（依据：仅 2 篇，低于门槛 3）
+409 {"error":"申诉已处理，不可重复操作"}   ← 重复驳回被拒
+200 {"balance":0,"txns":null}   ← user5 积分为 0、无流水
+
+== S5: 越权与鉴权 ==
+403 role-violation denied      ← user 令牌访问客服接口被拒
+401 events-token denied        ← 事件接入缺少 X-Source-Token 被拒
+200 （user4 查询本人进度正常）
+
+== S1/S8: 运营结算核查汇总 ==
+200 {"activity":{...,"daily_threshold":3,"reward_points":30},
+     "window_closed":false,
+     "days":[
+       {"biz_date":"2026-11-11","reached_users":1,"rewarded_users":1,"total_points":30,
+        "appeals_open":0,"appeals_compensated":0,"appeals_rejected":0},
+       {"biz_date":"2026-11-12","reached_users":1,"rewarded_users":1,"total_points":30,
+        "appeals_open":0,"appeals_compensated":1,"appeals_rejected":1}],
+     "inconsistencies":[],      ← 达标人数与发奖人数一一对应，无不一致项
+     "rewards":[{"id":7,"user_id":3,"points":30},{"id":9,"user_id":4,"points":30}]}
+
+数据库留痕核对（演示后）：
+- reading_event：含 accepted/rejected（超窗、活动期外等）留痕，source=1/2 齐全
+- appeal：#13 已补发(resolved, operator/依据留痕)、#14 已驳回
+- reward/point_txn/user_balance：user3=30、user4=30（流水 ref_id=reward#9/7）
+- daily_progress：按 (user, biz_date, article) 唯一去重

@@ -1,0 +1,10 @@
+﻿internal/clock             语句    3  未覆盖   0  覆盖率 100.0%
+internal/config            语句   22  未覆盖   0  覆盖率 100.0%
+internal/model             语句    1  未覆盖   0  覆盖率 100.0%
+internal/readingsvc        语句  122  未覆盖  11  覆盖率  91.0%（核心包）
+internal/server            语句   60  未覆盖   2  覆盖率  96.7%（核心包）
+internal/server/handler    语句  114  未覆盖   0  覆盖率 100.0%（核心包）
+internal/service           语句  294  未覆盖  40  覆盖率  86.4%（核心包）
+internal/store             语句  218  未覆盖  14  覆盖率  93.6%（核心包）
+合计（不含 cmd 与 testutil） 语句 834 未覆盖 67 覆盖率  92.0%
+门禁结果: 通过
