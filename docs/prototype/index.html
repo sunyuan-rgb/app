@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题目10 阅读活动 · 可操作原型</title>
+<style>
+  :root{--bg:#f5f7fa;--card:#fff;--ink:#1f2937;--line:#e5e7eb;--pri:#2563eb;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--muted:#6b7280}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:#111827;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:16px;font-weight:600}
+  header .role{display:flex;align-items:center;gap:8px;margin-left:auto}
+  select,button,input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;outline:none}
+  button{cursor:pointer;background:var(--pri);color:#fff;border-color:var(--pri)}
+  button.ghost{background:#fff;color:var(--pri)}
+  button.danger{background:var(--bad);border-color:var(--bad)}
+  main{max-width:1080px;margin:16px auto;padding:0 16px}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .tabs button{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:500;background:#f9fafb}
+  .tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px}
+  .ok{background:#dcfce7;color:var(--ok)} .warn{background:#fef3c7;color:var(--warn)}
+  .bad{background:#fee2e2;color:var(--bad)} .muted{background:#f3f4f6;color:var(--muted)}
+  .toast{position:fixed;right:18px;bottom:18px;max-width:380px;padding:10px 14px;border-radius:8px;color:#fff;display:none;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .toast.ok{background:var(--ok)} .toast.err{background:var(--bad)}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .kv{display:flex;gap:24px;flex-wrap:wrap}
+  .kv b{font-size:18px}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1>资讯 App 阅读活动（题目 10）原型</h1>
+  <div class="role">
+    身份：<select id="token">
+      <option value="user-token-1">user-token-1（用户张三）</option>
+      <option value="user-token-2">user-token-2（用户李四）</option>
+      <option value="agent-token-1">agent-token-1（客服）</option>
+      <option value="ops-token-1">ops-token-1（运营）</option>
+    </select>
+    <button class="ghost" onclick="switchRole()">切换身份</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
+
+<footer>
+  可操作原型（后补交付于 2026-11-12，对应实现见仓库 main 分支；演示数据为内存态，与实际实现接口一致：/ops/activity /events /users/* /agent/* /ops/summary）
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const DB = {
+  activity: {name:"十一月阅读活动", start:"2026-11-11", end:"2026-11-13", threshold:3, points:30, published:false},
+  clockOffsetH: 0,
+  users: {"user-token-1":{id:"u-1",name:"张三"},"user-token-2":{id:"u-2",name:"李四"}},
+  articles: ["a-101 晨跑的好处","a-102 秋季养生","a-103 城市夜观星","a-104 早茶文化","a-105 图书馆指南"],
+  events: [],           // {id,user,article,occurAt,bizDate,state}
+  rewards: [],          // {user,bizDate,points,ref}
+  points: {"u-1":0,"u-2":0}, flows: {"u-1":[],"u-2":[]},
+  appeals: [],          // {id,user,desc,state,conclusion}
+  source: [],           // 可信阅读记录（readingsvc）
+};
+let role = "user-token-1", tab = "publish";
+const TABS = {
+  "user-token-1":[["read","阅读上报"],["progress","我的进度"],["appeal","发起申诉"]],
+  "user-token-2":[["read","阅读上报"],["progress","我的进度"],["appeal","发起申诉"]],
+  "agent-token-1":[["handle","申诉核查"]],
+  "ops-token-1":[["publish","发布活动"],["summary","结算核查"]],
+};
+function now(){ const t=new Date(2026,10,11,9,0,0); t.setHours(t.getHours()+DB.clockOffsetH); return t; }
+function fmt(t){ return t.toISOString().slice(0,16).replace("T"," "); }
+function bizDate(t){ const bj=new Date(t.getTime()+8*3600e3); return bj.toISOString().slice(0,10); }
+function toast(msg,ok){ const el=document.getElementById("toast"); el.textContent=msg; el.className="toast "+(ok?"ok":"err"); el.style.display="block"; setTimeout(()=>el.style.display="none",3200); }
+function me(){ return (DB.users[role]||{}).id; }
+function switchRole(){ role=document.getElementById("token").value; tab=TABS[role][0][0]; render(); }
+
+function render(){
+  const tabs=document.getElementById("tabs");
+  tabs.innerHTML=TABS[role].map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()">${l}</button>`).join("");
+  const v=document.getElementById("view");
+  if(tab==="publish") v.innerHTML=viewPublish();
+  if(tab==="read") v.innerHTML=viewRead();
+  if(tab==="progress") v.innerHTML=viewProgress();
+  if(tab==="appeal") v.innerHTML=viewAppeal();
+  if(tab==="handle") v.innerHTML=viewHandle();
+  if(tab==="summary") v.innerHTML=viewSummary();
+}
+
+let pubErr="";
+function viewPublish(){
+  const a=DB.activity;
+  return `<div class="card"><h2>① 活动发布（发布后参数固定）</h2>
+  <div class="grid">
+    <label>活动名<input value="${a.name}" ${a.published?"disabled":""} onchange="DB.activity.name=this.value"></label>
+    <label>开始<input value="${a.start}" ${a.published?"disabled":""} onchange="DB.activity.start=this.value"></label>
+    <label>结束<input value="${a.end}" ${a.published?"disabled":""} onchange="DB.activity.end=this.value"></label>
+    <label>每日门槛（篇）<input value="${a.threshold}" ${a.published?"disabled":""} onchange="DB.activity.threshold=+this.value"></label>
+    <label>奖励（积分）<input value="${a.points}" ${a.published?"disabled":""} onchange="DB.activity.points=+this.value"></label>
+  </div>
+  <p style="margin-top:10px"><button onclick="publish()">发布活动</button>
+  <button class="ghost" onclick="tryPublishAgain()">重复发布（验证 409）</button>
+  状态：${a.published?'<span class="tag ok">已发布（不可修改）</span>':'<span class="tag muted">未发布</span>'}</p>
+  ${pubErr?`<p class="tag bad">${pubErr}</p>`:""}
+  <p class="hint">教学时钟偏移 <b>+${DB.clockOffsetH}h</b>（模拟迟到/窗口关闭）</p></div>`;
+}
+function publish(){
+  DB.activity.published=true; pubErr=""; render(); toast("发布成功：起止/门槛/积分数已固定",true);
+}
+function tryPublishAgain(){
+  pubErr = DB.activity.published ? "HTTP 409 · 已发布活动不可重复发布，亦无修改/撤销入口（按题面）" : "";
+  render(); toast(pubErr||"尚未发布", !DB.activity.published);
+}
+
+function viewRead(){
+  const opts=DB.articles.map(a=>`<option>${a}</option>`).join("");
+  return `<div class="card"><h2>② 阅读服务上报（模拟 readingsvc）</h2>
+  <div class="grid">
+    <label>文章<select id="art">${opts}</select></label>
+    <label>事件编号<input id="eid" placeholder="evt-001（全局唯一）"></label>
+    <label>可信记录注入<input id="srcTime" placeholder="发生时间留空=立即成功"></label>
+  </div>
+  <p style="margin-top:10px">
+    <button onclick="sendEvent()">正常上报</button>
+    <button class="ghost" onclick="sendEvent(true)">重发同一编号（验证去重）</button>
+    <button class="ghost" onclick="sendEvent(false,'late')">跨日迟到上报</button>
+    <button class="danger" onclick="noAuth()">缺令牌请求（验证 401）</button>
+  </p>
+  <p class="hint">规则：同一用户同一日同一文章只计一次；事件编号重复拒绝；迟到 ≤24h 受理并归发生日。</p></div>
+  <div class="card"><h2>最近事件</h2><table><tr><th>编号</th><th>用户</th><th>文章</th><th>发生时间</th><th>业务日</th><th>状态</th></tr>
+  ${DB.events.slice(-6).reverse().map(e=>`<tr><td>${e.id}</td><td>${e.user}</td><td>${e.article}</td><td>${fmt(e.occurAt)}</td><td>${e.bizDate}</td><td>${tagOf(e.state)}</td></tr>`).join("")||"<tr><td colspan=6>暂无</td></tr>"}</table></div>`;
+}
+function tagOf(s){ return {accepted:'<span class="tag ok">accepted</span>',duplicated:'<span class="tag warn">duplicated</span>',dup_article:'<span class="tag warn">dup_article</span>',rejected:'<span class="tag bad">rejected（活动外）</span>'}[s]||s; }
+let lastEid="";
+function sendEvent(resend,mode){
+  const art=document.getElementById("art").value, eid=document.getElementById("eid").value||"evt-"+Math.random().toString(36).slice(2,6);
+  const id=resend?lastEid:eid; lastEid=id;
+  const t=now(); if(mode==="late") t.setDate(t.getDate()-1), t.setHours(23);
+  const out=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+  if(out<DB.activity.start||out>DB.activity.end){ DB.events.push({id,user:me(),article:art,occurAt:t,bizDate:out,state:"rejected"}); render(); toast("HTTP 422 · 发生时间不在活动期间 → rejected",false); return; }
+  const sameDay=DB.events.filter(e=>e.user===me()&&e.bizDate===out&&e.state==="accepted").map(e=>e.article);
+  if(DB.events.some(e=>e.id===id&&e.state==="accepted")){ DB.events.push({id,user:me(),article:art,occurAt:t,bizDate:out,state:"duplicated"}); render(); toast("HTTP 200 · 事件编号重复 → duplicated（不重计）",false); return; }
+  if(sameDay.includes(art)){ DB.events.push({id,user:me(),article:art,occurAt:t,bizDate:out,state:"dup_article"}); render(); toast("HTTP 200 · 同日同文章重复 → dup_article（不重计）",false); return; }
+  DB.events.push({id,user:me(),article:art,occurAt:t,bizDate:out,state:"accepted"}); DB.source.push({user:me(),article:art,bizDate:out});
+  autoReward(me(),out); render(); toast("HTTP 200 · accepted（业务日="+out+"）",true);
+}
+function noAuth(){ toast("HTTP 401 · 无效令牌：事件须通过阅读服务鉴权",false); }
+function autoReward(u,bizDate){
+  const n=DB.events.filter(e=>e.user===u&&e.bizDate===bizDate&&e.state==="accepted").length;
+  const has=DB.rewards.some(r=>r.user===u&&r.bizDate===bizDate);
+  if(n>=DB.activity.threshold&&!has){
+    DB.rewards.push({user:u,bizDate,points:DB.activity.points,ref:"reward-"+(DB.rewards.length+1)});
+    DB.points[u]+=DB.activity.points; DB.flows[u].unshift({ref:"reward",points:"+"+DB.activity.points,at:fmt(now())});
+    toast(`达标 ${n}/${DB.activity.threshold}：自动发放 ${DB.activity.points} 积分（单事务：reward+流水+余额）`,true);
+  }
+}
+
+function viewProgress(){
+  const u=me(), flows=DB.flows[u];
+  return `<div class="card"><h2>③ 我的进度与流水（仅本人可见）</h2>
+  <div class="kv"><span>当前余额 <b>${DB.points[u]}</b> 分</span><span>今日已计 <b>${DB.events.filter(e=>e.user===u&&e.bizDate===bizDate(now())&&e.state==="accepted").length}</b>/${DB.activity.threshold} 篇</span></div>
+  <table style="margin-top:8px"><tr><th>流水引用</th><th>变动</th><th>时间</th></tr>
+  ${flows.map(f=>`<tr><td>${f.ref}</td><td>${f.points}</td><td>${f.at}</td></tr>`).join("")||"<tr><td colspan=3>暂无流水</td></tr>"}</table>
+  <p class="hint"><button class="ghost" onclick="crossRead()">尝试越权查询他人积分（验证 403）</button></p></div>`;
+}
+function crossRead(){ toast("HTTP 403 · 服务端按令牌解析身份，拒绝越权访问他人阅读与积分",false); }
+
+let apErr="";
+function viewAppeal(){
+  const u=me(), mine=DB.appeals.filter(a=>a.user===u);
+  return `<div class="card"><h2>④ 发起申诉（一条未结申诉）</h2>
+  <textarea id="apdesc" rows="2" style="width:100%">第三篇可信记录未送达，当日实际已读完三篇，请核查补入。</textarea>
+  <p style="margin-top:8px"><button onclick="addAppeal()">提交申诉</button>
+  <button class="ghost" onclick="addAppeal(true)">重复提交（验证限制）</button> ${apErr?`<span class="tag bad">${apErr}</span>`:""}</p></div>
+  <div class="card"><h2>我的申诉</h2><table><tr><th>编号</th><th>描述</th><th>状态</th><th>结论</th></tr>
+  ${mine.map(a=>`<tr><td>${a.id}</td><td>${a.desc}</td><td>${a.state==="resolved"?'<span class="tag ok">已结（'+a.result+'）</span>':a.state==="rejected"?'<span class="tag bad">已驳回</span>':'<span class="tag warn">待处理</span>'}</td><td>${a.conclusion||"-"}</td></tr>`).join("")||"<tr><td colspan=4>暂无</td></tr>"}</table></div>`;
+}
+function addAppeal(dup){
+  const u=me();
+  if(dup&&DB.appeals.some(a=>a.user===u&&a.state==="open")){ apErr="已有未结申诉，重复提交被拒绝"; render(); toast("HTTP 409 · 一人同一活动仅一条未结申诉",false); return; }
+  apErr=""; DB.appeals.push({id:"AP-"+(DB.appeals.length+1),user:u,desc:document.getElementById("apdesc").value,state:"open",conclusion:""});
+  render(); toast("申诉已受理，等待客服核查",true);
+}
+
+function viewHandle(){
+  return `<div class="card"><h2>⑤ 客服核查（结合已接收事件 + 模拟阅读服务可信查询）</h2>
+  <table><tr><th>编号</th><th>用户</th><th>描述</th><th>可信记录</th><th>操作</th></tr>
+  ${DB.appeals.filter(a=>a.state==="open").map(a=>{
+    const ok=DB.source.some(s=>s.user===a.user); const cnt=DB.events.filter(e=>e.user===a.user&&e.state==="accepted").length;
+    return `<tr><td>${a.id}</td><td>${a.user}</td><td>${a.desc}</td>
+    <td>${ok?`<span class="tag ok">${DB.articles.filter(x=>DB.source.some(s=>s.user===a.user&&s.article===x)).length} 条可信</span>`:'<span class="tag bad">无可信记录</span>'}</td>
+    <td><button onclick="approve('${a.id}')">补入并发奖</button> <button class="danger" onclick="reject('${a.id}')">驳回</button></td></tr>`;}).join("")||"<tr><td colspan=5>无待处理申诉</td></tr>"}</table>
+  <p class="hint">成立路径：补入合法记录 → 复用同一发奖规则（禁止直接改余额）；不成立：说明驳回原因，积分不变。</p></div>`;
+}
+function approve(id){
+  const a=DB.appeals.find(x=>x.id===id); if(!DB.source.some(s=>s.user===a.user)){ toast("无可信记录，不能补入",false); return; }
+  DB.articles.forEach(art=>{ if(DB.source.some(s=>s.user===a.user&&s.article===art)&&!DB.events.some(e=>e.user===a.user&&e.article===art&&e.state==="accepted"))
+    DB.events.push({id:"evt-ap-"+art.slice(-3),user:a.user,article:art,occurAt:now(),bizDate:bizDate(now()),state:"accepted"}); });
+  autoReward(a.user,bizDate(now()));
+  a.state="resolved"; a.result="成立"; a.conclusion=`可信记录证明达标，已补入并发奖（流水 reward-${DB.rewards.length}）`;
+  render(); toast("HTTP 200 · 补入完成，奖励到账；同一活动日期仅发一次",true);
+}
+function reject(id){
+  const a=DB.appeals.find(x=>x.id===id);
+  a.state="rejected"; a.conclusion="证据不足：可信记录未证明当日达标（不满三篇/活动外/超窗口），积分保持不变";
+  render(); toast("已驳回，结论留痕",false);
+}
+
+function viewSummary(){
+  const closed=DB.clockOffsetH>=74;
+  const reached=new Set(DB.rewards.map(r=>r.user+"|"+r.bizDate));
+  const rows=[...new Set(DB.events.filter(e=>e.state==="accepted").map(e=>e.user+"|"+e.bizDate))];
+  return `<div class="card"><h2>⑥ 运营结算核查</h2>
+  <p>活动已结束且经过 24 小时迟到窗口：<b>${closed?'<span class="tag ok">窗口已关闭（+74h）</span>':'<span class="tag warn">未关闭（当前 +'+DB.clockOffsetH+'h）</span>'}</b>
+  <button class="ghost" onclick="DB.clockOffsetH+=50;render()">+50h（迟到窗口内）</button>
+  <button class="ghost" onclick="DB.clockOffsetH+=74;render()">+74h（关闭窗口）</button></p>
+  <table style="margin-top:10px"><tr><th>用户|业务日</th><th>达标人数</th><th>发奖人数</th><th>积分总额</th><th>申诉结果</th><th>不一致</th></tr>
+  ${rows.map(k=>{const [u,d]=k.split("|"); const r=DB.rewards.find(x=>x.user===u&&x.bizDate===d); const ap=DB.appeals.find(a=>a.user===u);
+  return `<tr><td>${k}</td><td>1</td><td>${r?1:0}</td><td>${r?r.points:0}</td><td>${ap?ap.result||"待处理":"-"}</td><td>${(r?1:0)===((DB.events.filter(e=>e.user===u&&e.bizDate===d&&e.state==="accepted").length>=DB.activity.threshold)?1:0)?'<span class="tag ok">无</span>':'<span class="tag bad">MISMATCH</span>'}</td></tr>`}).join("")||"<tr><td colspan=6>暂无达标记录</td></tr>"}</table>
+  <p class="hint">窗口关闭后迟到事件应被拒绝；本表数据与积分流水、余额一致即可核清。</p></div>`;
+}
+render();
+</script>
+</body>
+</html>
