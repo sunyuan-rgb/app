@@ -8,3 +8,5 @@ internal/service           语句  294  未覆盖  40  覆盖率  86.4%（核心
 internal/store             语句  218  未覆盖  14  覆盖率  93.6%（核心包）
 合计（不含 cmd 与 testutil） 语句 834 未覆盖 67 覆盖率  92.0%
 门禁结果: 通过
+
+绑定版本: dev/10 提交 4841daa（2026-11-12，覆盖率原件 coverage-raw.out 与本汇总同批产生）
