@@ -13,7 +13,7 @@
 | 客服端 | `/agent` | app | 客服 | `GET /api/v1/agent/appeals?status=`、`/appeals/:id`、`POST /appeals/:id/reject`、`/appeals/:id/compensate` |
 | 模拟阅读服务 | `/` | readingsvc :8081 | 模拟上游 | `POST /api/v1/events`（带 `X-Source-Token`）、`GET /api/v1/records` |
 
-身份切换：三端页面顶部下拉选择预置账号令牌（`user-token-1..5`、`agent-token`、`ops-token`），所有请求以 `Authorization: Bearer <token>` 发出，后端按令牌解析角色与用户，**不接受请求体里的 user_id 作为身份**。
+身份切换：三端页面顶部下拉选择预置账号令牌（`user-token-1..5`、`agent-token-1`、`ops-token-1`），所有请求以 `Authorization: Bearer <token>` 发出，后端按令牌解析角色与用户，**不接受请求体里的 user_id 作为身份**。
 
 ## 2. 用户端 `/user`
 

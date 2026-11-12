@@ -2,7 +2,6 @@ package store_test
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -18,12 +17,10 @@ func TestOpen_InvalidDSN(t *testing.T) {
 }
 
 func TestOpen_ValidDSN(t *testing.T) {
-	_ = testutil.Setup(t) // 确保测试库存在
-	dsn := os.Getenv("TEST_DSN")
-	if dsn == "" {
-		dsn = "reading:Reading123!@tcp(127.0.0.1:3306)/"
-	}
-	opened, err := store.Open(dsn + "reading_activity_test?parseTime=true&loc=UTC")
+	db := testutil.Setup(t) // 确保测试库存在，并取得库名
+	_ = db
+	dsn := testutil.RootDSN()
+	opened, err := store.Open(dsn + testutil.DBName() + "?parseTime=true&loc=UTC")
 	if err != nil {
 		t.Fatal(err)
 	}

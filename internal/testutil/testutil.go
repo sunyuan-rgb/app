@@ -62,6 +62,16 @@ func sanitize(s string) string {
 	return out
 }
 
+// RootDSN 返回不带库名的基础连接串（以 / 结尾），供需要自建库的用例复用。
+func RootDSN() string {
+	return rootDSN()
+}
+
+// DBName 返回当前包的测试库名（按测试二进制派生），供需要直连测试库的用例复用。
+func DBName() string {
+	return testDBName()
+}
+
 func dbDSN() string {
 	return rootDSN() + testDBName() + "?" + dsnParams
 }
