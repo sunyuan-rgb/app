@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>模拟阅读服务</title>
+<style>
+body{font-family:system-ui,"Microsoft YaHei";max-width:860px;margin:24px auto;padding:0 16px;color:#222}
+h1{font-size:20px}h2{font-size:16px;margin-top:18px}
+.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
+input,select,button{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
+button{cursor:pointer;background:#0366d6;color:#fff;border:none}
+pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
+label{margin-right:10px}
+</style>
+</head>
+<body>
+<h1><a href="http://localhost:8080/">←</a> 模拟阅读服务（可信证据源）</h1>
+
+<div class="card"><h2>模拟阅读</h2>
+用户ID <input id="uid" type="number" value="3" style="width:70px">
+文章ID <input id="aid" type="number" style="width:70px">
+<label><input type="checkbox" id="drop"> 丢弃投递（模拟消息丢失，申诉演示用）</label>
+<button onclick="read()">阅读并投递</button></div>
+
+<div class="card"><h2>异常事件触发</h2>
+场景 <select id="sc">
+<option value="duplicate">duplicate 同编号重复投递</option>
+<option value="conflict">conflict 同编号换内容</option>
+<option value="future">future 未来事件</option>
+<option value="late_cross_day">late_cross_day 昨日23:59 跨日迟到</option>
+<option value="cross_day_normal">cross_day_normal 昨日23:30</option>
+<option value="too_late">too_late 超24小时窗口</option>
+<option value="custom">custom 自定义发生时间</option>
+</select>
+用户ID <input id="suid" type="number" value="3" style="width:70px">
+文章ID <input id="said" type="number" style="width:70px">
+自定义时间 <input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:220px">
+<button onclick="simulate()">触发</button></div>
+
+<div class="card"><h2>可信查询</h2>
+用户ID <input id="quid" type="number" style="width:70px">
+业务日 <input id="qdate" type="date">
+<button onclick="query()">查询</button>
+<div id="out"><pre>结果…</pre></div></div>
+
+<script>
+document.getElementById("qdate").value=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
+async function req(url,opts){const r=await fetch(url,opts);const b=await r.json();return{status:r.status,body:b};}
+function show(b){document.getElementById("out").innerHTML="<pre>"+JSON.stringify(b,null,1)+"</pre>";}
+async function read(){const{body}=await req("/read",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:+document.getElementById("uid").value,article_id:+document.getElementById("aid").value,drop:document.getElementById("drop").checked})});show(body);}
+async function simulate(){const sc=document.getElementById("sc").value;
+const body={scenario:sc,user_id:+document.getElementById("suid").value,article_id:+document.getElementById("said").value};
+if(sc==="custom")body.occur_at=document.getElementById("oat").value;
+const{body:res}=await req("/simulate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});show(res);}
+async function query(){const u=document.getElementById("quid").value,d=document.getElementById("qdate").value;
+const{body}=await req("/trusted/records?user_id="+u+"&biz_date="+d);show(body);}
+</script>
+</body>
+</html>

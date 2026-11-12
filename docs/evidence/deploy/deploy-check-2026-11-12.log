@@ -1,0 +1,18 @@
+﻿== docker compose ps ==
+t10-mysql Up 35 seconds (healthy)
+t10-readingsvc Up 9 seconds
+t10-server Up 14 seconds (healthy)
+== healthz ==
+200 {"status":"ok"}
+== event x3 ==
+200 {"status":"accepted","biz_date":"2026-11-12","counted":true}
+200 {"status":"accepted","biz_date":"2026-11-12","counted":true}
+200 {"status":"rewarded","biz_date":"2026-11-12","counted":true,"reward_points":30}
+== progress ==
+200 {"biz_date":"2026-11-12","articles":[101,102,103],"distinct_count":3,"threshold":3,"reached":true,"rewarded":true,"reward_points":30}
+== points ==
+200 {"balance":30,"txns":[{"id":1,"user_id":1,"points":30,"ref_type":"reward","ref_id":1,"created_at":"2026-11-12T10:57:24.622Z"}]}
+== ops summary ==
+200 {"activity":{"id":1,"name":"每日阅读三篇文章得积分","start_at":"2026-11-11T00:00:00+08:00","end_at":"2026-11-13T00:00:00+08:00","daily_threshold":3,"reward_points":30},"window_closed":false,"days":[{"biz_date":"2026-11-11","reached_users":0,"rewarded_users":0,"total_points":0,"appeals_open":0,"appeals_compensated":0,"appeals_rejected":0},{"biz_date":"2026-11-12","reached_users":1,"rewarded_users":1,"total_points":30,"appeals_open":0,"appeals_compensated":0,"appeals_rejected":0}],"inconsistencies":[],"rewards":[{"id":1,"user_id":1,"points":30,"created_at":"2026-11-12T10:57:24.621Z"}]}
+== readingsvc page ==
+200 length=3158

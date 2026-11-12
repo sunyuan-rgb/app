@@ -1,0 +1,28 @@
+# Go 构建产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+vendor/
+
+# 运行时数据与本地环境（口令只在 .env / .env.test，不入库）
+.env
+.env.test
+/data/
+/tmp/
+.deploy/
+
+# IDE
+.idea/
+.vscode/
+
+# 教师侧审计产物（不属于学生交付物）
+outputs/
+
+# 证据归档例外：docs/evidence 下的原始输出与演示日志须入库
+!docs/evidence/**/*.out
+!docs/evidence/**/*.log

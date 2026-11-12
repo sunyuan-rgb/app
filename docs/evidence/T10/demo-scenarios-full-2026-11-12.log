@@ -1,0 +1,56 @@
+题目 10 必演场景补充演示（验收整改后复演）
+执行时间：2026-11-12 10:47–10:52（真实时钟；跨日/窗口场景使用教学时钟 TEACH_CLOCK_OFFSET）
+环境：独立演示库 reading_activity_demo2，服务 :8090（避免污染既有演示留痕）
+脚本：scripts/demo_scenarios_full.ps1 -Mode s1s5|clock|summary -Base http://localhost:8090
+
+===== S1：运营发布 → 阅读 3 篇 → 自动发奖 → 查流水 → 汇总 =====
+发布（运维令牌 ops-token-1，POST /api/v1/ops/activity）：
+200 {"activity":{"id":8,"name":"双日阅读活动A2","start_at":"2026-11-12T09:00:00+08:00",
+     "end_at":"2026-11-14T11:00:00+08:00","daily_threshold":3,"reward_points":30}}
+阅读（事件接入 X-Source-Token）：
+200 {"status":"accepted","biz_date":"2026-11-12","counted":true}   d-s1-1 article 71
+200 {"status":"accepted","biz_date":"2026-11-12","counted":true}   d-s1-2 article 72
+200 {"status":"rewarded","biz_date":"2026-11-12","counted":true,"reward_points":30}   d-s1-3 article 73
+查流水：见下方数据库核对（user2 reward#1 / txn ref_id=1 / balance=30）
+
+===== S5：自动入账 vs 客服补入并发（真并发：两个 curl 进程同时发出）=====
+用户5 先读 2 篇 → 提交申诉（200 {"id":1,...,"status":"待处理"}）
+并发请求：
+  A) POST /api/v1/events           自动第 3 篇
+     auto={"status":"rewarded","biz_date":"2026-11-12","counted":true,"reward_points":30}
+  B) POST /api/v1/agent/appeals/1/compensate  客服补入第 4 篇
+     agent={"handle_result":{"status":"accepted","biz_date":"2026-11-12","counted":true},"resolved":false}
+结果：仅 A 触发发奖；B 计数但不重复发奖（发奖唯一键 + CountArticles 判定）。
+数据库核对：user5 reward=1 条、point_txn=1 条、balance=30、daily_progress=4 篇 → 只发一次成立。
+
+===== S2：跨日迟到归属 / 活动结束后窗口内受理 / 超窗拒绝（教学时钟 +50h）=====
+当前教学时钟 ≈ 2026-11-14 12:30（活动 11-14 11:00 已结束，处于 24h 迟到窗口内）
+200 {"status":"accepted","biz_date":"2026-11-13","counted":true}
+    ← occur 11-13 22:00，接收 11-14 12:30：活动结束后窗口内仍受理，归发生日 11-13
+200 {"status":"rejected","counted":false,"reason":"事件已拒绝并留痕：超过 24 小时迟到窗口"}
+    ← occur 11-12 09:30（迟到 >50h）：超窗拒绝并留痕（status=2, reject_reason 入库）
+200 {"status":"accepted","biz_date":"2026-11-13","counted":true}
+    ← occur 11-13 23:30，接收 11-14：跨日迟到按发生日归属（biz_date=11-13 而非 11-14）
+
+===== S5：窗口关闭后终局核查（教学时钟 +74h > 结束+24h）=====
+200 {"activity":{"id":8,...,"end_at":"2026-11-14T11:00:00+08:00"},
+     "window_closed":true,
+     "days":[{"biz_date":"2026-11-12","reached_users":2,"rewarded_users":2,"total_points":60,
+              "appeals_open":0,"appeals_compensated":0,"appeals_rejected":1}, ...],
+     "inconsistencies":[],
+     "rewards":[{"id":1,"user_id":2,"points":30},{"id":2,"user_id":5,"points":30}]}
+客服对并发场景申诉裁决（依据留痕）：
+200 {"status":"rejected"}  conclusion="并发场景中系统自动入账已触发发奖，补入记录不重复发奖；申诉按已解决处理"
+
+===== 数据库持久化核对（reading_activity_demo2）=====
+reward:       user2 11-12 30分 #1;  user5 11-12 30分 #2
+point_txn:    user2 30 ref=reward#1; user5 30 ref=reward#2
+user_balance: user2 30; user5 30          → 余额=流水，一一对应
+daily_progress: user2 3 篇; user5 4 篇; user3 11-13 2 篇（跨日归日生效）
+reading_event: d-clk-1 accepted/11-13/counted; d-clk-2 rejected(超窗)/11-12;
+               d-clk-3 accepted/11-13/counted
+appeal:        #1 status=2（已驳回，conclusion/operator 留痕）
+
+===== 说明 =====
+- 教学时钟用法：TEACH_CLOCK_OFFSET=50h / 74h 启动服务；日志时间以真实时间+偏移计。
+- 演示库与正式演示库（reading_activity）分离，避免影响既有 S2/S3/S4 留痕。

@@ -1,0 +1,92 @@
+﻿[deploy] 版本 fe82c82 开始构建
+bash.exe :  Image t10-readingsvc Building 
+所在位置 C:\Users\35357\AppData\Local\Temp\genie-ps-1794455783106-w1chxu.ps1:954 字符: 42
++ ... app; $out = & "D:\msys64\usr\bin\bash.exe" -c "export PATH=/usr/bin:/ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Image t10-readingsvc Building :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Image t10-server Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.05kB 0.0s done
+#1 DONE 0.0s
+#2 [server internal] load build definition from Dockerfile
+#2 transferring dockerfile: 860B done
+#2 DONE 0.0s
+#3 [server internal] load metadata for docker.io/library/alpine:3.20
+#3 DONE 0.4s
+#4 [readingsvc internal] load metadata for docker.io/library/golang:1.26-alpine
+#4 DONE 0.4s
+#5 [server internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+#6 [readingsvc internal] load build context
+#6 DONE 0.0s
+#7 [server stage-1 1/5] FROM docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+#7 resolve docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc 0.1s done
+#7 DONE 0.1s
+#8 [readingsvc build 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:30b1e546a9c7fa3b747c2bdba3a0c7bdf3a02ebb4c5b8405d2f948d7e8aac4ec
+#8 resolve docker.io/library/golang:1.26-alpine@sha256:30b1e546a9c7fa3b747c2bdba3a0c7bdf3a02ebb4c5b8405d2f948d7e8aac4ec 0.1s done
+#8 DONE 0.1s
+#8 [server build 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:30b1e546a9c7fa3b747c2bdba3a0c7bdf3a02ebb4c5b8405d2f948d7e8aac4ec
+#8 resolve docker.io/library/golang:1.26-alpine@sha256:30b1e546a9c7fa3b747c2bdba3a0c7bdf3a02ebb4c5b8405d2f948d7e8aac4ec 0.1s done
+#8 DONE 0.1s
+#6 [readingsvc internal] load build context
+#6 transferring context: 21.39kB 0.0s done
+#6 DONE 0.0s
+#9 [server build 2/6] WORKDIR /src
+#9 CACHED
+#10 [server build 3/6] COPY go.mod go.sum ./
+#10 CACHED
+#11 [server build 4/6] RUN go mod download
+#11 CACHED
+#12 [server build 5/6] COPY . .
+#12 DONE 0.1s
+#12 [readingsvc build 5/6] COPY . .
+#12 DONE 0.1s
+#13 [server build 6/6] RUN go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server  && go build -trimpath -ldflags="-s -w" -o /out/readingsvc ./cmd/readingsvc
+#13 DONE 8.3s
+#13 [server build 6/6] RUN go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server  && go build -trimpath -ldflags="-s -w" -o /out/readingsvc ./cmd/readingsvc
+#13 DONE 8.3s
+#14 [server stage-1 2/5] RUN apk add --no-cache ca-certificates tzdata
+#14 CACHED
+#15 [server stage-1 3/5] WORKDIR /app
+#15 CACHED
+#16 [server stage-1 4/5] COPY --from=build /out/server /app/server
+#16 CACHED
+#17 [server stage-1 5/5] COPY --from=build /out/readingsvc /app/readingsvc
+#17 CACHED
+#18 [server] exporting to image
+#18 exporting layers done
+#18 exporting manifest sha256:18b5fb693a954d7f50a3f88b30be706c28d2e291034c73e76e89449ea0c35ca5 done
+#18 exporting config sha256:3dc6785e7ceb5f7f6867e73c08af70503333722993530c3004daba3452f22087 done
+#18 exporting attestation manifest sha256:af0557045ac3d51f429ccf235836784cb6c10cfa59dd6bac551f0455a0d4b6f1
+#18 exporting attestation manifest sha256:af0557045ac3d51f429ccf235836784cb6c10cfa59dd6bac551f0455a0d4b6f1 0.1s done
+#18 exporting manifest list sha256:c1c45fd68f7c1b58b3a0bb0dcdc8584ce6dbce77a9c5251fa06e36b6e6b23297 0.1s done
+#18 naming to docker.io/library/t10-server:latest
+#18 naming to docker.io/library/t10-server:latest 0.0s done
+#18 unpacking to docker.io/library/t10-server:latest 0.0s done
+#18 DONE 0.3s
+#19 [readingsvc] exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:41692f91b93e83cb9bd769767a29b2fd8b41c495397b44cbb09ba8c650f4cd35 done
+#19 exporting config sha256:15b6ad0d336911bebb16207027e0f3be30af8ab223e2c3ef59dae0d77042501b done
+#19 exporting attestation manifest sha256:c8825e5815aff6adc15a91e84855de05d6491a1fb5e2233e106de06ed81c823b 0.1s done
+#19 exporting manifest list sha256:8295802f9e7c6204afcd3b58e6a8dd007f280a4b06371104fd59eb2f422ae6d8 0.1s done
+#19 naming to docker.io/library/t10-readingsvc:latest done
+#19 unpacking to docker.io/library/t10-readingsvc:latest 0.0s done
+#19 DONE 0.3s
+#20 [server] resolving provenance for metadata file
+#20 DONE 0.0s
+#21 [readingsvc] resolving provenance for metadata file
+#21 DONE 0.0s
+ Image t10-readingsvc Built 
+ Image t10-server Built 
+ Container t10-readingsvc Running 
+ Container t10-mysql Running 
+ Container t10-server Running 
+ Container t10-mysql Waiting 
+ Container t10-mysql Healthy 
+ Container t10-server Waiting 
+ Container t10-server Healthy 
+[deploy] 成功：fe82c82（http://127.0.0.1:8080/healthz 通过，冒烟通过）
