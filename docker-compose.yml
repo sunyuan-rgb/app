@@ -1,0 +1,70 @@
+# 一键部署：MySQL + 主服务 + 模拟阅读服务
+# 用法：cp .env.example .env && 填入口令 && docker compose up -d --build
+# 健康检查：curl localhost:8080/healthz ；冒烟：scripts/smoke_agent.ps1 / demo_scenarios.ps1
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: t10-mysql
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: reading_activity
+      TZ: Asia/Shanghai
+    volumes:
+      # 首次初始化：由脚本以 utf8mb4 显式执行 001/002/003（避免中文乱码）
+      - ./migrations:/migrations:ro
+      - ./scripts/initdb.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+      - t10-mysql-data:/var/lib/mysql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  server:
+    build:
+      context: .
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    container_name: t10-server
+    command: ["/app/server"]
+    environment:
+      APP_ADDR: ":8080"
+      APP_DSN: "root:${MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/reading_activity?parseTime=true&loc=UTC"
+      EVENTS_TOKEN: "${EVENTS_TOKEN:-teach-events-token}"
+      READING_SVC_URL: "http://readingsvc:8081"
+      TEACH_CLOCK_OFFSET: "${TEACH_CLOCK_OFFSET:-}"
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  readingsvc:
+    build:
+      context: .
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    container_name: t10-readingsvc
+    command: ["/app/readingsvc"]
+    environment:
+      RSVC_ADDR: ":8081"
+      APP_DSN: "root:${MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/reading_activity?parseTime=true&loc=UTC"
+      MAIN_SVC_URL: "http://server:8080"
+      EVENTS_TOKEN: "${EVENTS_TOKEN:-teach-events-token}"
+      TEACH_CLOCK_OFFSET: "${TEACH_CLOCK_OFFSET:-}"
+    ports:
+      - "8081:8081"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  t10-mysql-data:
