@@ -34,7 +34,7 @@ const tok="ops-token-1";
 const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
 document.getElementById("start").value=today+"T00:00:00";
 document.getElementById("end").value=today+"T23:59:59";
-async function api(path,opts){const r=await fetch(path,{headers:{Authorization:"Bearer "+tok,...(opts||{})},...opts});return{status:r.status,body:await r.json()};}
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+tok,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
 async function publish(){const s=document.getElementById("start").value,e=document.getElementById("end").value;
 const body={name:document.getElementById("name").value,start_at:s.length==19?s.replace(" ","T")+"+08:00":s,end_at:e.length==19?e.replace(" ","T")+"+08:00":e,daily_threshold:+document.getElementById("th").value,reward_points:+document.getElementById("pts").value};
 const{status,body:res}=await api("/api/v1/ops/activity",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});

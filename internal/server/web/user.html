@@ -49,7 +49,7 @@ sel.onchange=()=>{localStorage.setItem("tok",sel.value);loadAll();};
 const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
 document.getElementById("date").value=today;
 document.getElementById("adate").value=today;
-async function api(path,opts){const r=await fetch(path,{headers:{Authorization:"Bearer "+sel.value},...opts});return{status:r.status,body:await r.json()};}
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+sel.value,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
 async function loadActivity(){const{body}=await api("/api/v1/users/activity");const a=body.activity;
 document.getElementById("activity").innerHTML=a?`<b>${a.name}</b> 门槛 ${a.daily_threshold} 篇/日，奖 ${a.reward_points} 分<br>${a.start_at} ~ ${a.end_at}`:"暂无已发布活动";}
 async function loadProgress(){const d=document.getElementById("date").value||today;const{status,body}=await api("/api/v1/users/progress?date="+d);

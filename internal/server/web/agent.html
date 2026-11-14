@@ -29,7 +29,7 @@ pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space
 
 <script>
 const tok="agent-token-1";
-async function api(path,opts){const r=await fetch(path,{headers:{Authorization:"Bearer "+tok,...(opts||{})},...opts});return{status:r.status,body:await r.json()};}
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+tok,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
 const stName=["<span class='st0'>待处理</span>","<span class='st1'>已补发</span>","<span class='st2'>已驳回</span>"];
 async function loadList(){const{body}=await api("/api/v1/agent/appeals?status="+document.getElementById("st").value);
 document.getElementById("list").innerHTML="<table><tr><th>ID</th><th>用户</th><th>业务日</th><th>状态</th><th>内容</th><th></th></tr>"+
