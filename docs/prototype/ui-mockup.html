@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题目 10 阅读活动系统 · 界面原型图（蓝图版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f2e9; --paper2:#efeadd; --ink:#1c1917; --ink2:#57534e;
+  --blue:#1e40af; --blue2:#2563eb; --line:#94a3b8; --grid:rgba(30,64,175,.07);
+  --red:#b91c1c; --green:#15803d; --amber:#b45309; --card:#fffdf7;
+  --serif:"Noto Serif SC","Songti SC","SimSun",serif;
+  --sans:"Noto Sans SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+
+/* ── 图纸标题栏 ── */
+.sheet-head{border:2.5px solid var(--ink);background:var(--card);display:grid;grid-template-columns:1fr auto;box-shadow:6px 6px 0 rgba(28,25,23,.12)}
+.sheet-head .t{padding:20px 26px 16px}
+.sheet-head h1{font-family:var(--serif);font-weight:900;font-size:30px;letter-spacing:2px}
+.sheet-head .sub{color:var(--ink2);margin-top:6px;font-size:13px}
+.meta{border-left:2.5px solid var(--ink);display:grid;grid-template-columns:repeat(2,1fr);min-width:330px}
+.meta div{padding:10px 18px;border-bottom:1px solid var(--ink);font-size:12px}
+.meta div:nth-child(3),.meta div:nth-child(4){border-bottom:none}
+.meta b{display:block;font-size:10px;color:var(--ink2);letter-spacing:2px;font-weight:500}
+.meta span{font-family:var(--mono);font-size:13px;font-weight:600}
+
+/* ── 章节标 ── */
+.sec{margin:44px 0 14px;display:flex;align-items:baseline;gap:14px}
+.sec .no{font-family:var(--serif);font-weight:900;font-size:26px;color:var(--blue);border-bottom:3px solid var(--blue);padding:0 2px}
+.sec h2{font-family:var(--serif);font-weight:900;font-size:21px;letter-spacing:1px}
+.sec .route{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.note{border-left:3px solid var(--amber);background:rgba(180,83,9,.06);padding:8px 14px;font-size:12.5px;color:var(--ink2);margin:10px 0 18px}
+.note b{color:var(--amber)}
+
+/* ── 浏览器框 ── */
+.browser{border:2px solid var(--ink);background:var(--card);box-shadow:5px 5px 0 rgba(28,25,23,.10);margin-bottom:8px}
+.chrome{display:flex;align-items:center;gap:8px;background:var(--ink);color:#e7e5e4;padding:7px 12px;font-size:11px}
+.chrome .dot{width:9px;height:9px;border-radius:50%;background:#57534e}
+.chrome .url{margin-left:6px;background:#292524;border-radius:3px;padding:2px 12px;font-family:var(--mono);font-size:11px;color:#d6d3d1}
+.page{padding:16px 18px 18px}
+.page h3{font-family:var(--serif);font-size:16px;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.page h3 .tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--blue);border:1px solid var(--blue);padding:1px 8px;border-radius:99px;letter-spacing:1px}
+
+/* ── 原型控件（灰度线框，示意用） ── */
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1;min-width:240px}
+.card{border:1.5px solid var(--ink);border-radius:4px;background:#fff;position:relative}
+.card .cap{font-size:11px;font-weight:700;letter-spacing:1px;border-bottom:1px dashed var(--line);padding:7px 12px;color:var(--ink2);display:flex;justify-content:space-between}
+.card .bd{padding:10px 12px}
+.ctrl{border:1.5px solid var(--ink2);border-radius:3px;background:#faf9f6;padding:6px 10px;font-size:12.5px;color:var(--ink2)}
+.btn{display:inline-block;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:5px 16px;font-size:12.5px;border-radius:3px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.red{background:var(--red);border-color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-weight:700;text-align:left;border-bottom:1.5px solid var(--ink);padding:4px 8px;color:var(--ink2);font-size:11px;letter-spacing:1px}
+td{border-bottom:1px solid #e7e5e4;padding:4px 8px;font-family:var(--mono);font-size:11.5px}
+.kv{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px}
+.kv b{font-family:var(--mono);font-size:15px}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 9px;border-radius:99px;border:1.5px solid}
+.pill.ok{color:var(--green);border-color:var(--green);background:rgba(21,128,61,.06)}
+.pill.bad{color:var(--red);border-color:var(--red);background:rgba(185,28,28,.06)}
+.pill.warn{color:var(--amber);border-color:var(--amber);background:rgba(180,83,9,.06)}
+.sample{font-size:10px;color:var(--ink2);opacity:.75;font-family:var(--mono)}
+
+/* ── 标注气泡 ── */
+.anno{margin:6px 0 22px;display:flex;flex-direction:column;gap:6px;padding-left:4px}
+.anno .a{font-size:12.5px;color:var(--ink2);display:flex;gap:9px;align-items:baseline}
+.anno .n{flex:none;width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);transform:translateY(2px)}
+.anno code{font-family:var(--mono);font-size:11.5px;color:var(--blue);background:rgba(37,99,235,.06);padding:0 5px;border-radius:3px}
+
+/* ── 架构图 ── */
+.arch{border:2px solid var(--ink);background:var(--card);padding:22px;margin-bottom:8px;box-shadow:5px 5px 0 rgba(28,25,23,.10)}
+.arch svg{width:100%;height:auto;display:block}
+.mono{font-family:var(--mono)}
+
+/* ── 数据模型 ── */
+.dm{border:2px solid var(--ink);background:var(--card);padding:18px;box-shadow:5px 5px 0 rgba(28,25,23,.10)}
+.dm .tbl{display:inline-block;border:1.5px solid var(--ink);margin:6px;vertical-align:top;background:#fff}
+.dm .tbl .th{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11.5px;font-weight:600;padding:4px 10px}
+.dm .tbl .td{font-family:var(--mono);font-size:10.5px;padding:2.5px 10px;border-top:1px solid #e7e5e4;color:var(--ink2)}
+.dm .tbl .td em{color:var(--blue);font-style:normal;font-weight:600}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:14px}
+.rules .r{border:1.5px solid var(--ink);background:#fff;padding:9px 13px;font-size:12px}
+.rules .r b{font-family:var(--mono);color:var(--blue);margin-right:6px}
+
+footer{margin-top:40px;border-top:2.5px solid var(--ink);padding-top:14px;display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2);flex-wrap:wrap;gap:8px}
+footer .mono{font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 图纸标题栏 -->
+  <div class="sheet-head">
+    <div class="t">
+      <h1>资讯 App 阅读活动系统 · 界面原型图</h1>
+      <div class="sub">题目 10：阅读活动的发布、奖励、申诉与结算核查 ｜ 依据仓库 main=67c6569 实际实现绘制（三端 + 模拟阅读服务，共 5 个页面框架）</div>
+    </div>
+    <div class="meta">
+      <div><b>图号</b><span>T10-UI-001</span></div>
+      <div><b>版本</b><span>v1.0.0</span></div>
+      <div><b>依据提交</b><span>67c6569</span></div>
+      <div><b>日期</b><span>2026-11-13</span></div>
+    </div>
+  </div>
+  <div class="note">本图按<b>实际代码</b>绘制：页面结构对应 <span class="mono">internal/server/web/*.html</span> 与 <span class="mono">internal/readingsvc/web/read.html</span>，字段对应真实接口返回；卡内文字为<b>示例数据</b>（仅示意布局），页边编号标注对应真实端点与数据表。</div>
+
+  <!-- 0 架构 -->
+  <div class="sec"><span class="no">0</span><h2>部署拓扑</h2><span class="route">docker-compose.yml</span></div>
+  <div class="arch">
+    <svg viewBox="0 0 1040 260" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono,monospace">
+      <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#1e40af"/></marker></defs>
+      <g font-size="12">
+        <!-- user -->
+        <rect x="20" y="92" width="130" height="76" fill="#fff" stroke="#1c1917" stroke-width="2"/>
+        <text x="85" y="122" text-anchor="middle" font-weight="700" fill="#1c1917">浏览器</text>
+        <text x="85" y="142" text-anchor="middle" font-size="10.5" fill="#57534e">三端页面 + 阅读服务页</text>
+        <!-- server -->
+        <rect x="240" y="92" width="230" height="76" fill="#dbeafe" stroke="#1e40af" stroke-width="2.5"/>
+        <text x="355" y="118" text-anchor="middle" font-weight="700" fill="#1e3a8a">t10-server  :8080</text>
+        <text x="355" y="138" text-anchor="middle" font-size="10.5" fill="#1e40af">主服务（用户/客服/运营三端）</text>
+        <text x="355" y="154" text-anchor="middle" font-size="10.5" fill="#1e40af">/healthz 健康检查</text>
+        <!-- readingsvc -->
+        <rect x="560" y="20" width="230" height="66" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+        <text x="675" y="46" text-anchor="middle" font-weight="700" fill="#92400e">t10-readingsvc  :8081</text>
+        <text x="675" y="64" text-anchor="middle" font-size="10.5" fill="#b45309">模拟阅读服务（可信记录源）</text>
+        <!-- mysql -->
+        <rect x="560" y="130" width="230" height="66" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+        <text x="675" y="156" text-anchor="middle" font-weight="700" fill="#166534">t10-mysql  :3306</text>
+        <text x="675" y="174" text-anchor="middle" font-size="10.5" fill="#15803d">MySQL 8.0 · reading_activity</text>
+        <!-- ops -->
+        <rect x="860" y="20" width="160" height="176" fill="#fff" stroke="#1c1917" stroke-dasharray="5 4" stroke-width="1.5"/>
+        <text x="940" y="52" text-anchor="middle" font-weight="700" fill="#1c1917">环境参数</text>
+        <text x="940" y="76" text-anchor="middle" font-size="10.5" fill="#57534e">.env（不入库）</text>
+        <text x="940" y="98" text-anchor="middle" font-size="10.5" fill="#57534e">MYSQL_ROOT_PASSWORD</text>
+        <text x="940" y="118" text-anchor="middle" font-size="10.5" fill="#57534e">EVENTS_TOKEN</text>
+        <text x="940" y="138" text-anchor="middle" font-size="10.5" fill="#57534e">TEACH_CLOCK_OFFSET</text>
+        <text x="940" y="158" text-anchor="middle" font-size="10.5" fill="#57534e">APP_PORT / MYSQL_PORT</text>
+        <!-- arrows -->
+        <line x1="150" y1="130" x2="236" y2="130" stroke="#1e40af" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="470" y1="112" x2="556" y2="62" stroke="#b45309" stroke-width="2" marker-end="url(#ar)"/>
+        <text x="512" y="76" font-size="10" fill="#b45309">READING_SVC_URL</text>
+        <line x1="470" y1="150" x2="556" y2="158" stroke="#15803d" stroke-width="2" marker-end="url(#ar)"/>
+        <text x="486" y="168" font-size="10" fill="#15803d">APP_DSN</text>
+        <line x1="675" y1="86" x2="675" y2="126" stroke="#1e40af" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+        <text x="683" y="112" font-size="10" fill="#1e40af">回推事件 EVENTS_TOKEN</text>
+        <line x1="790" y1="100" x2="856" y2="100" stroke="#57534e" stroke-width="1.4" stroke-dasharray="3 3"/>
+      </g>
+    </svg>
+  </div>
+  <div class="anno">
+    <div class="a"><span class="n">1</span><span>三容器一键部署 <code>docker compose up -d --build</code>；server 依赖 mysql 健康检查后才启动，readingsvc 依赖 server。</span></div>
+    <div class="a"><span class="n">2</span><span>阅读服务→主服务的事件回推带 <code>EVENTS_TOKEN</code> 鉴权（缺令牌 401）。</span></div>
+    <div class="a"><span class="n">3</span><span><code>TEACH_CLOCK_OFFSET</code> 教学时钟仅演示用，用于 +50h/+74h 跨日与窗口关闭场景。</span></div>
+  </div>
+
+  <!-- 1 入口 -->
+  <div class="sec"><span class="no">1</span><h2>入口导航</h2><span class="route">GET / · index.html</span></div>
+  <div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://localhost:8080/</span></div>
+    <div class="page">
+      <h3>资讯 App 阅读活动系统 <span class="tag">教学演示环境</span></h3>
+      <div class="row">
+        <div class="col card"><div class="cap">用户端 <span class="mono">/user</span></div><div class="bd">查看活动 / 每日进度 / 积分流水 / 提交申诉</div></div>
+        <div class="col card"><div class="cap">客服端 <span class="mono">/agent</span></div><div class="bd">申诉列表 / 核查证据 / 驳回或补入记录</div></div>
+        <div class="col card"><div class="cap">运营端 <span class="mono">/ops</span></div><div class="bd">发布活动 / 结算核查汇总</div></div>
+        <div class="col card"><div class="cap">模拟阅读服务 <span class="mono">:8081</span></div><div class="bd">模拟阅读 / 异常事件触发 / 可信查询</div></div>
+      </div>
+      <p class="sample" style="margin-top:10px">预置账号令牌见 migrations/003_users_appeal.sql（5 用户 + 客服 + 运营，教学固定值）</p>
+    </div>
+  </div>
+
+  <!-- 2 用户端 -->
+  <div class="sec"><span class="no">2</span><h2>用户端</h2><span class="route">GET /user · Bearer user-token-N</span></div>
+  <div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://localhost:8080/user</span></div>
+    <div class="page">
+      <h3>用户端 <span class="tag">身份：user1 ▾（user1~user5）</span></h3>
+      <div class="row">
+        <div class="col card">
+          <div class="cap">当前活动 ①</div>
+          <div class="bd">
+            <b>十一月阅读活动</b><br>
+            <span class="mono" style="font-size:12px">2026-11-11 00:00 ~ 2026-11-13 00:00</span><br>
+            <span style="font-size:12.5px">门槛 <b>3</b> 篇/日 · 奖 <b>30</b> 分/日</span>
+          </div>
+        </div>
+        <div class="col card">
+          <div class="cap">每日进度 ② <span>日期 <span class="mono">2026-11-12</span> ▾</span></div>
+          <div class="bd">
+            已计文章：<b>晨跑的好处, 秋季养生, 城市夜观星</b><br>
+            有效 <b>3/3</b> <span class="pill ok">已达标</span> <span class="pill ok">已发奖 30 分</span>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="col card">
+          <div class="cap">积分与流水 ③</div>
+          <div class="bd">
+            余额 <b>60</b> 分
+            <table>
+              <tr><th>流水ID</th><th>积分</th><th>类型</th><th>关联</th><th>时间</th></tr>
+              <tr><td>2</td><td>+30</td><td>reward</td><td>#2</td><td>11-12 10:21</td></tr>
+              <tr><td>1</td><td>+30</td><td>reward</td><td>#1</td><td>11-11 19:04</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="col card">
+          <div class="cap">提交申诉 ④</div>
+          <div class="bd">
+            业务日 <span class="ctrl mono">2026-11-12 ▾</span><br><br>
+            <span class="ctrl" style="display:block">申诉描述（必填，≤1024 字）</span><br>
+            <span class="btn">提交申诉</span>
+            <span class="pill warn">同一业务日仅一条未结申诉</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="anno">
+    <div class="a"><span class="n">1</span><span><code>GET /api/v1/users/activity</code> —— 仅返回最近已发布活动；发布后参数固定，无修改入口（重复发布 409）。</span></div>
+    <div class="a"><span class="n">2</span><span><code>GET /api/v1/users/progress?date=</code> —— 进度落在 <code>daily_progress</code>（唯一键 <code>uk_user_date_article</code>，同日同文只计一次）。</span></div>
+    <div class="a"><span class="n">3</span><span><code>GET /api/v1/users/points</code> —— 余额 = 流水合计（<code>point_txn</code> 与 reward 同事务写入）。</span></div>
+    <div class="a"><span class="n">4</span><span><code>POST /api/v1/users/appeals</code> —— 活动期校验 + 唯一键 <code>uk_user_day_open</code>（重复未结 → 409）。</span></div>
+  </div>
+
+  <!-- 3 客服端 -->
+  <div class="sec"><span class="no">3</span><h2>客服端</h2><span class="route">GET /agent · Bearer agent-token-1</span></div>
+  <div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://localhost:8080/agent</span></div>
+    <div class="page">
+      <h3>客服端 · 申诉核查 <span class="tag">状态：待处理 ▾</span></h3>
+      <table>
+        <tr><th>申诉#</th><th>用户</th><th>业务日</th><th>内容</th><th>状态</th><th>操作</th></tr>
+        <tr><td>3</td><td>user4</td><td>2026-11-12</td><td>第三篇可信记录未送达…</td><td><span class="pill warn">待处理</span></td><td><span class="mono" style="font-size:11px">核查 ▾</span></td></tr>
+        <tr><td>2</td><td>user2</td><td>2026-11-11</td><td>当日已读完三篇未到账</td><td><span class="pill ok">已补入</span></td><td>—</td></tr>
+        <tr><td>1</td><td>user1</td><td>2026-11-11</td><td>证据不足申请</td><td><span class="pill bad">已驳回</span></td><td>—</td></tr>
+      </table>
+      <div class="row" style="margin-top:12px">
+        <div class="col card">
+          <div class="cap">核查证据 ⑤（只读）</div>
+          <div class="bd">
+            <span class="mono" style="font-size:11px">GET :8081/trusted/records?user_id=4&amp;biz_date=2026-11-12</span>
+            <table style="margin-top:6px">
+              <tr><th>event_id</th><th>article</th><th>occur_at</th><th>biz_date</th></tr>
+              <tr><td>rs-e-701</td><td>11</td><td>11-12 08:12</td><td>2026-11-12</td></tr>
+              <tr><td>rs-e-702</td><td>12</td><td>11-12 09:40</td><td>2026-11-12</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="col card">
+          <div class="cap">处置 ⑥</div>
+          <div class="bd">
+            补入记录：event_id <span class="ctrl mono">agent-u4-1</span> · 文章 <span class="ctrl mono">13 ▾</span> · 发生时间 <span class="ctrl mono">11-12 09:15</span><br><br>
+            <span class="btn">补入并发奖</span> <span class="btn red">驳回（须写明依据）</span><br><br>
+            <span class="sample">补入走统一事件路径：同样受活动期 / 24h 窗口 / 去重约束；仅补入直接触发发奖才自动结案</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="anno">
+    <div class="a"><span class="n">5</span><span>证据源为模拟阅读服务的可信记录表 <code>trusted_record</code>（唯一键 <code>uk_event</code>）；客服只读查询，不得改动。</span></div>
+    <div class="a"><span class="n">6</span><span><code>POST /api/v1/agent/appeals/{id}/compensate</code> 与 <code>/reject</code> —— 服务端无直接改余额/改原始事件的任何路径；驳回必须写明依据（空依据拒绝）。</span></div>
+  </div>
+
+  <!-- 4 运营端 -->
+  <div class="sec"><span class="no">4</span><h2>运营端</h2><span class="route">GET /ops · Bearer ops-token-1</span></div>
+  <div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://localhost:8080/ops</span></div>
+    <div class="page">
+      <h3>运营端 <span class="tag">发布 + 结算核查</span></h3>
+      <div class="row">
+        <div class="col card">
+          <div class="cap">发布活动 ⑦（发布后参数固定）</div>
+          <div class="bd">
+            名称 <span class="ctrl">十一月阅读活动</span><br><br>
+            起止 <span class="ctrl mono">2026-11-11</span> ~ <span class="ctrl mono">2026-11-13</span><br><br>
+            门槛 <span class="ctrl mono">3</span> 篇/日 · 奖励 <span class="ctrl mono">30</span> 分<br><br>
+            <span class="btn">发布活动</span> <span class="pill bad">重复发布 → 409</span>
+          </div>
+        </div>
+        <div class="col card" style="flex:2">
+          <div class="cap">结算核查汇总 ⑧ <span>业务日 2026-11-12（迟到窗口关闭后）</span></div>
+          <div class="bd">
+            <div class="kv" style="margin-bottom:8px">
+              <span>达标人数 <b>4</b></span><span>发奖人数 <b>4</b></span><span>积分总额 <b>120</b></span>
+              <span>申诉 待处理 <b>1</b> / 补入 <b>1</b> / 驳回 <b>1</b></span><span>不一致 <span class="pill ok">无 MISMATCH</span></span>
+            </div>
+            <table>
+              <tr><th>user</th><th>有效文章数</th><th>达标</th><th>发奖</th><th>积分</th><th>核对</th></tr>
+              <tr><td>user1</td><td>3</td><td>✓</td><td>✓</td><td>30</td><td><span class="pill ok">一致</span></td></tr>
+              <tr><td>user2</td><td>3</td><td>✓</td><td>✓</td><td>30</td><td><span class="pill ok">一致</span></td></tr>
+              <tr><td>user4</td><td>3</td><td>✓</td><td>✓</td><td>30</td><td><span class="pill ok">申诉补入</span></td></tr>
+              <tr><td>user5</td><td>3</td><td>✓</td><td>✗</td><td>0</td><td><span class="pill warn">待补发名单</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="anno">
+    <div class="a"><span class="n">7</span><span><code>POST /api/v1/ops/activity</code> —— 无更新/撤销接口（题面要求）；重复发布 409。</span></div>
+    <div class="a"><span class="n">8</span><span><code>GET /api/v1/ops/summary?date=</code> —— 达标按去重后有效文章数 ≥ 门槛（<code>COUNT(DISTINCT article_id)</code>）；提供"达标未发奖"名单供补发核查。</span></div>
+  </div>
+
+  <!-- 5 阅读服务 -->
+  <div class="sec"><span class="no">5</span><h2>模拟阅读服务</h2><span class="route">GET :8081 · read.html</span></div>
+  <div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">http://localhost:8081/</span></div>
+    <div class="page">
+      <h3>模拟阅读服务 <span class="tag">本地可控模拟，非真实第三方</span></h3>
+      <div class="row">
+        <div class="col card">
+          <div class="cap">模拟阅读 ⑨</div>
+          <div class="bd">用户 <span class="ctrl mono">user1 ▾</span> · 文章 <span class="ctrl mono">13 ▾</span> · <span class="pill warn">投递失败注入 ▾</span><br><br><span class="btn">产生一次阅读</span><br><br><span class="sample">写 trusted_record（biz_date 按北京时间发生日）→ 回推主服务事件</span></div>
+        </div>
+        <div class="col card">
+          <div class="cap">异常事件触发 ⑩</div>
+          <div class="bd"><span class="ctrl mono" style="display:block">同编号换内容 / 超 24h 迟到 / 活动外发生 / 缺令牌</span><br><span class="sample">用于演示 conflict / rejected / 401 等异常结果，全部留痕可查</span></div>
+        </div>
+        <div class="col card">
+          <div class="cap">可信查询 ⑪</div>
+          <div class="bd"><span class="mono" style="font-size:11px">/trusted/records?user_id=&amp;biz_date=</span><br><br><span class="sample">客服申诉核查的唯一证据源，只读</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="anno">
+    <div class="a"><span class="n">9</span><span><code>POST /simulate/read</code> —— 结果含 delivered 与 biz_date；投递失败注入用于演示"可信记录存在但事件未达"的申诉场景。</span></div>
+    <div class="a"><span class="n">10</span><span>异常触发对应 <code>event_service.go:65-81</code> 的四类拒绝路径，拒绝事件持久化留痕（<code>reading_event.status=rejected</code>）。</span></div>
+  </div>
+
+  <!-- 6 数据模型 -->
+  <div class="sec"><span class="no">6</span><h2>数据模型与业务规则</h2><span class="route">migrations/001~004</span></div>
+  <div class="dm">
+    <span class="tbl"><div class="th">user_account</div><div class="td">id · username <em>uk</em> · role · token <em>uk</em> · balance</div></span>
+    <span class="tbl"><div class="th">activity</div><div class="td">id · name · start_at · end_at · threshold · points · status</div></span>
+    <span class="tbl"><div class="th">reading_event</div><div class="td">event_id <em>uk</em> · user · article · occur_at · received_at · biz_date · counted · status · reject_reason</div></span>
+    <span class="tbl"><div class="th">event_conflict</div><div class="td">event_id · payload · received_at</div></span>
+    <span class="tbl"><div class="th">daily_progress</div><div class="td">user · biz_date · article <em>uk 三列</em> · first_event_id</div></span>
+    <span class="tbl"><div class="th">reward</div><div class="td">user · activity · biz_date <em>uk 三列</em> · points</div></span>
+    <span class="tbl"><div class="th">point_txn</div><div class="td">user · points · ref_type · ref_id · created_at</div></span>
+    <span class="tbl"><div class="th">appeal</div><div class="td">user · activity · biz_date · content · status · conclusion · open_flag <em>uk</em></div></span>
+    <span class="tbl"><div class="th">trusted_record</div><div class="td">event_id <em>uk</em> · user · article · occur_at · biz_date</div></span>
+    <div class="rules">
+      <div class="r"><b>R1</b>业务日按发生时间的北京时间归属（跨日迟到归发生日）</div>
+      <div class="r"><b>R2</b>迟到 ≤24h 受理；活动期外拒绝；拒绝事件留痕可查</div>
+      <div class="r"><b>R3</b>同用户同日同文章只计一次（数据库唯一键，非内存判断）</div>
+      <div class="r"><b>R4</b>同事件编号同内容幂等返回；换内容拒绝并写 event_conflict</div>
+      <div class="r"><b>R5</b>每日达 3 篇发 30 分，仅一次（reward 唯一键幂等）</div>
+      <div class="r"><b>R6</b>奖励记录+流水+余额同事务，余额恒等于流水合计</div>
+      <div class="r"><b>R7</b>客服补入复用统一事件路径，同样受窗口/活动期/去重约束</div>
+      <div class="r"><b>R8</b>同用户同日仅一条未结申诉；客服无直接改余额/原始事件路径</div>
+    </div>
+  </div>
+
+  <footer>
+    <span>依据实际实现绘制 ｜ internal/server/web · internal/readingsvc/web · migrations/001~004 · docker-compose.yml</span>
+    <span class="mono">T10-UI-001 · 67c6569 · 2026-11-13</span>
+  </footer>
+</div>
+</body>
+</html>

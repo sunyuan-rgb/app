@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阅读活动系统 · 演示前端</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1f2937; --sub:#6b7280; --line:#e5e7eb;
+  --blue:#2563eb; --blue-d:#1d4ed8; --green:#059669; --red:#dc2626; --amber:#d97706;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:#111827;color:#fff;padding:14px 28px;display:flex;align-items:center;gap:18px}
+header h1{font-size:17px;font-weight:600;letter-spacing:1px}
+header .clock{margin-left:auto;font-size:12px;color:#9ca3af}
+header .clock b{color:#fbbf24;font-family:Consolas,monospace;font-size:13px}
+header button{background:#374151;color:#d1d5db;border:1px solid #4b5563;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer}
+header button:hover{background:#4b5563}
+main{max-width:1020px;margin:0 auto;padding:20px 16px 60px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tabs button{flex:1;padding:11px 0;border:1.5px solid var(--line);background:var(--card);border-radius:8px;font-size:14.5px;cursor:pointer;color:var(--sub);font-weight:600}
+.tabs button.on{border-color:var(--blue);color:var(--blue-d);background:#eff6ff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card h2{font-size:14.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 .hint{font-size:12px;color:var(--sub);font-weight:400}
+label{font-size:12.5px;color:var(--sub);display:inline-block;margin:0 6px 0 0}
+input,select{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;margin-right:10px}
+button.go{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:13.5px;cursor:pointer;font-weight:600}
+button.go:hover{background:var(--blue-d)}
+button.go.gray{background:#6b7280}
+button.go.red{background:var(--red)}
+.msg{margin-top:10px;padding:8px 12px;border-radius:6px;font-size:13px;display:none}
+.msg.ok{display:block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.msg.bad{display:block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.msg.warn{display:block;background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--sub);text-align:left;font-weight:500;border-bottom:1.5px solid var(--line);padding:6px 8px;font-size:12px}
+td{border-bottom:1px solid var(--line);padding:6px 8px}
+.tag{display:inline-block;padding:1px 10px;border-radius:99px;font-size:11.5px;font-weight:600}
+.tag.g{background:#d1fae5;color:#065f46}.tag.y{background:#fef3c7;color:#92400e}.tag.r{background:#fee2e2;color:#991b1b}
+.kv{display:flex;gap:26px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
+.kv b{color:var(--ink);font-size:16px;font-family:Consolas,monospace}
+.muted{color:var(--sub);font-size:12.5px}
+#toasts{position:fixed;top:16px;right:16px;z-index:9}
+#toasts div{background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;margin-top:8px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<header>
+  <h1>资讯 App 阅读活动系统</h1>
+  <span style="font-size:12px;color:#9ca3af">题目 10 演示前端（内存态示例数据）</span>
+  <div class="clock">教学时钟：<b id="clock">2026-11-12 10:00</b>
+    <button onclick="shiftClock(50)">+50h 迟到受理</button>
+    <button onclick="shiftClock(74)">+74h 窗口关闭</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="on" data-t="ops" onclick="tab('ops',this)">运营端</button>
+    <button data-t="user" onclick="tab('user',this)">用户端</button>
+    <button data-t="agent" onclick="tab('agent',this)">客服端</button>
+  </div>
+
+  <!-- 运营端 -->
+  <section id="t-ops">
+    <div class="card">
+      <h2>发布活动 <span class="hint">发布后参数固定，重复发布返回 409</span></h2>
+      <label>名称</label><input id="a-name" value="十一月阅读活动" style="width:160px">
+      <label>起止</label><input value="2026-11-11" style="width:110px"> ~ <input value="2026-11-13" style="width:110px">
+      <label>门槛</label><input id="a-th" value="3" style="width:46px">
+      <label>奖励</label><input id="a-pt" value="30" style="width:52px">
+      <button class="go" onclick="publish()">发布活动</button>
+      <div id="pub-msg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>结算核查汇总 <span class="hint">迟到窗口关闭后核查：达标数应与发奖数一致</span></h2>
+      <div class="kv" style="margin-bottom:10px">
+        <span>达标人数 <b id="s-reach">0</b></span>
+        <span>发奖人数 <b id="s-reward">0</b></span>
+        <span>积分总额 <b id="s-points">0</b></span>
+        <span>核对结果 <span class="tag g" id="s-flag">无</span></span>
+      </div>
+      <table id="s-table"><tr><th>用户</th><th>有效文章数</th><th>达标</th><th>发奖</th><th>积分</th></tr></table>
+    </div>
+  </section>
+
+  <!-- 用户端 -->
+  <section id="t-user" style="display:none">
+    <div class="card">
+      <h2>身份 <span class="hint">演示令牌：user-token-1 ~ 5</span></h2>
+      <select id="who" onchange="renderUser()"><option>user1</option><option>user2</option><option>user3</option><option>user4</option><option>user5</option></select>
+    </div>
+    <div class="card">
+      <h2>阅读上报 <span class="hint">同一事件编号重发 → duplicated；同日同文重复 → dup_article；第 3 篇自动发奖</span></h2>
+      <label>事件编号</label><input id="e-id" style="width:120px">
+      <label>文章</label><select id="e-art"></select>
+      <button class="go" onclick="report()">上报阅读事件</button>
+      <div id="ev-msg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>我的进度与积分</h2>
+      <div class="kv" style="margin-bottom:8px">
+        <span>今日有效 <b id="u-cnt">0/3</b></span>
+        <span>状态 <span class="tag y" id="u-st">未达标</span></span>
+        <span>余额 <b id="u-bal">0</b> 分</span>
+      </div>
+      <table id="u-txn"><tr><th>流水</th><th>积分</th><th>类型</th><th>关联</th><th>时间</th></tr></table>
+    </div>
+    <div class="card">
+      <h2>提交申诉</h2>
+      <label>业务日</label><input id="ap-date" value="2026-11-12" style="width:120px">
+      <input id="ap-txt" placeholder="申诉描述（必填）" style="width:320px">
+      <button class="go" onclick="appeal()">提交</button>
+      <div id="ap-msg" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- 客服端 -->
+  <section id="t-agent" style="display:none">
+    <div class="card">
+      <h2>申诉列表 <span class="hint">补入复用统一发奖路径；驳回必须写明依据</span></h2>
+      <table id="ag-tbl"></table>
+    </div>
+    <div class="card">
+      <h2>处置</h2>
+      <label>申诉</label><select id="ag-id"></select>
+      <label>补入文章</label><select id="ag-art"></select>
+      <button class="go" onclick="compensate()">补入并发奖</button>
+      <button class="go red" onclick="reject()">驳回</button>
+      <input id="ag-reason" placeholder="驳回依据" style="width:220px">
+      <div id="ag-msg" class="msg"></div>
+    </div>
+  </section>
+</main>
+<div id="toasts"></div>
+
+<script>
+/* ── 内存态（示例数据，语义与真实接口一致） ── */
+const ARTICLES=[["晨跑的好处",11],["秋季养生指南",12],["城市夜观星空",13],["咖啡因与专注力",14]];
+const clockEl=document.getElementById("clock");
+let now=new Date("2026-11-12T10:00:00");
+let published=false, act=null, conflicts=[];
+let prog={}; // user -> {date -> {articles:[], eventIds:{}}}
+let wallet={}; // user -> {bal, txn:[{id,pts,type,ref,t}]}
+let appeals=[], apSeq=0, evSeq=0, txSeq=0;
+
+function toast(t){const d=document.createElement("div");d.textContent=t;document.getElementById("toasts").appendChild(d);setTimeout(()=>d.remove(),2600)}
+function shiftClock(h){now=new Date(now.getTime()+h*3600*1000);paintClock()}
+function paintClock(){const p=n=>String(n).padStart(2,"0");clockEl.textContent=`${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`}
+function bizDate(d){const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
+function today(){return bizDate(now)}
+
+ARTICLES.forEach(([n])=>{const o=document.createElement("option");o.value=n;o.textContent=n;eArt.appendChild(o);agArt.appendChild(o.cloneNode(true))});
+const eArt=document.getElementById("e-art"),agArt=document.getElementById("ag-art");
+
+function tab(t,btn){document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));btn.classList.add("on");
+  ["ops","user","agent"].forEach(x=>document.getElementById("t-"+x).style.display=x===t?"":"none")}
+
+function publish(){
+  const m=document.getElementById("pub-msg");
+  if(published){m.className="msg bad";m.textContent="409 Conflict：活动已发布且参数固定，不可重复发布";return}
+  published=true;
+  act={name:aName.value,th:+aTh.value,pt:+aPt.value,start:"2026-11-11",end:"2026-11-13"};
+  m.className="msg ok";m.textContent=`201 已发布：${act.name}（${act.start} ~ ${act.end}，门槛 ${act.th} 篇/日，奖 ${act.pt} 分）`;
+  renderUser();renderSummary();toast("活动已发布 ✔");
+}
+
+function report(){
+  const u=who.value,id=eId.value.trim(),art=eArt.value;
+  const m=document.getElementById("ev-msg");
+  if(!published){m.className="msg bad";m.textContent="rejected：无进行中的已发布活动";return}
+  if(!id){m.className="msg warn";m.textContent="请填写事件编号（演示：e-1、e-2…）";return}
+  const day=(prog[u]??={})[today()]??={articles:[],eventIds:{}};
+  if(day.eventIds[id]){ // 同编号
+    m.className="msg warn";m.textContent=`duplicated：事件 ${id} 重复投递，按首次结果返回（不重复计数）`;return;
+  }
+  if(day.articles.includes(art)){
+    day.eventIds[id]="dup";
+    m.className="msg warn";m.textContent=`dup_article：${art} 当日已计入，不重复计数`;renderUser();return;
+  }
+  day.articles.push(art);day.eventIds[id]="ok";eId.value="e-"+(++evSeq+1);
+  m.className="msg ok";m.textContent=`accepted：${art} 已计入 ${today()}（biz_date 按发生日归属）`;
+  if(day.articles.length>=act.th && !(wallet[u]?.rewarded?.[today()])){
+    (wallet[u]??={bal:0,txn:[],rewarded:{}}); 
+    if(!wallet[u].rewarded[today()]){
+      wallet[u].rewarded[today()]=true;wallet[u].bal+=act.pt;wallet[u].txn.unshift({id:++txSeq,pts:"+30",type:"reward",ref:"#"+txSeq,t:today()});
+      m.textContent+=` → 达标！自动发奖 ${act.pt} 分（奖励记录+流水+余额同事务）`;toast(`user ${u.slice(-1)} 发奖 30 分 ✔`);
+    }
+  }
+  renderUser();
+}
+
+function renderUser(){
+  const u=who.value,w=wallet[u]||{bal:0,txn:[]},d=(prog[u]||{})[today()],n=d?d.articles.length:0;
+  document.getElementById("u-cnt").textContent=n+"/3";
+  const st=document.getElementById("u-st");
+  if(w.rewarded?.[today()]){st.className="tag g";st.textContent="已达标·已发奖"}
+  else if(n>=3){st.className="tag g";st.textContent="已达标"}
+  else{st.className="tag y";st.textContent="未达标"}
+  document.getElementById("u-bal").textContent=w.bal;
+  document.getElementById("u-txn").innerHTML="<tr><th>流水</th><th>积分</th><th>类型</th><th>关联</th><th>时间</th></tr>"+
+    (w.txn.map(t=>`<tr><td>#${t.id}</td><td>${t.pts}</td><td>${t.type}</td><td>${t.ref}</td><td>${t.t}</td></tr>`).join("")||"");
+}
+
+function appeal(){
+  const u=who.value,m=document.getElementById("ap-msg"),date=document.getElementById("ap-date").value,txt=document.getElementById("ap-txt").value.trim();
+  if(!txt){m.className="msg bad";m.textContent="申诉描述不能为空";return}
+  if(date>"2026-11-13"){m.className="msg bad";m.textContent="rejected：活动期外不可申诉";return}
+  if(appeals.some(a=>a.user===u&&a.date===date&&a.st==="待处理")){m.className="msg bad";m.textContent="409：同一业务日已有未结申诉";return}
+  appeals.push({id:++apSeq,user:u,date,txt,st:"待处理"});renderAgent();
+  m.className="msg ok";m.textContent=`提交成功：申诉 #${apSeq}（待处理）`;
+}
+
+function renderAgent(){
+  const rows=appeals.map(a=>`<tr><td>#${a.id}</td><td>${a.user}</td><td>${a.date}</td><td>${a.txt}</td><td><span class="tag ${a.st==="待处理"?"y":a.st.includes("驳回")?"r":"g"}">${a.st}</span></td></tr>`).join("");
+  document.getElementById("ag-tbl").innerHTML="<tr><th>申诉</th><th>用户</th><th>业务日</th><th>内容</th><th>状态</th></tr>"+(rows||"");
+  document.getElementById("ag-id").innerHTML=appeals.filter(a=>a.st==="待处理").map(a=>`<option value="${a.id}">申诉 #${a.id}（${a.user}）</option>`).join("")||"<option>暂无待处理</option>";
+}
+function compensate(){
+  const a=appeals.find(x=>x.id==document.getElementById("ag-id").value),m=document.getElementById("ag-msg");
+  if(!a){m.className="msg warn";m.textContent="请先由用户提交一条申诉";return}
+  const art=agArt.value;
+  a.st="已补入";renderAgent();
+  m.className="msg ok";m.textContent=`申诉 #${a.id} 已结案：补入「${art}」走统一事件路径 → 触发发奖 30 分（受窗口/去重约束，幂等）`;
+}
+function reject(){
+  const a=appeals.find(x=>x.id==document.getElementById("ag-id").value),m=document.getElementById("ag-msg");
+  if(!a){m.className="msg warn";m.textContent="请先由用户提交一条申诉";return}
+  if(!document.getElementById("ag-reason").value.trim()){m.className="msg bad";m.textContent="驳回必须写明依据";return}
+  a.st="已驳回";renderAgent();m.className="msg ok";m.textContent=`申诉 #${a.id} 已驳回（依据已留痕）`;
+}
+
+function renderSummary(){
+  const rows=[];let reach=0,reward=0,pts=0;
+  ["user1","user2","user3","user4","user5"].forEach(u=>{
+    const d=(prog[u]||{})["2026-11-12"],n=d?d.articles.length:0,ok=n>=3,got=ok&&wallet[u]?.rewarded?.["2026-11-12"];
+    if(ok)reach++;if(got){reward++;pts+=30}
+    rows.push(`<tr><td>${u}</td><td>${n}</td><td>${ok?"✓":"✗"}</td><td>${got?"✓":"✗"}</td><td>${got?30:0}</td></tr>`);
+  });
+  document.getElementById("s-reach").textContent=reach;
+  document.getElementById("s-reward").textContent=reward;
+  document.getElementById("s-points").textContent=pts;
+  const f=document.getElementById("s-flag");
+  f.className="tag "+(reach===reward?"g":"r");f.textContent=reach===reward?"一致":"MISMATCH";
+  document.getElementById("s-table").innerHTML="<tr><th>用户</th><th>有效文章数</th><th>达标</th><th>发奖</th><th>积分</th></tr>"+rows.join("");
+}
+paintClock();renderUser();renderAgent();renderSummary();
+eId.value="e-1";
+</script>
+</body>
+</html>

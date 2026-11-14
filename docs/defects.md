@@ -47,6 +47,14 @@
 - D-06：`Makefile:17`、`internal/testutil/testutil.go` 曾硬编码 DSN 口令；改为 `APP_DSN` / `TEST_DSN` 注入，`.env` / `.env.test` 进 `.gitignore`。
 - D-07：Dockerfile 增加 `ARG GOPROXY`（默认 `goproxy.cn`）；compose 使用 `${MYSQL_PORT:-3306}`、`${APP_PORT:-8080}`。
 
+### D-08 前端 POST 请求丢失 Authorization 头（2026-11-13 部署演示中发现）
+
+- 现象：运营端点「发布」提示 `401 缺少访问令牌`；页面内令牌（`ops-token-1`）实际存在，GET 类查询全部正常。
+- 根因：`internal/server/web/{ops,user,agent}.html` 的 `api()` 封装写法为 `{headers:{Authorization:...}, ...opts}`——当调用方传入 `opts.headers`（POST 必带 Content-Type）时，展开顺序导致整个 `headers` 被覆盖，`Authorization` 丢失。
+- 修复：三端统一改为 `{...opts, headers:{Authorization:..., ...(opts.headers||{})}}`，令牌头恒保留且允许调用方附加头。
+- 复测：容器重建后（`docker compose up -d --build`）运营端发布成功返回 200 `已发布 #id`；用户端申诉提交、客服端补入/驳回同步验证通过。
+- 影响面：纯前端 JS 封装，接口与鉴权逻辑无改动。
+
 ## 待补动作（合规所需）
 
 1. 在飞书项目 `r17te9` 逐条登记上述缺陷，取得真实 Bug 编号。
