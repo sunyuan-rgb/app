@@ -4,28 +4,47 @@
 <meta charset="utf-8">
 <title>客服端 - 申诉核查</title>
 <style>
-body{font-family:system-ui,"Microsoft YaHei";max-width:960px;margin:24px auto;padding:0 16px;color:#222}
-h1{font-size:20px}h2{font-size:16px;margin-top:18px}
-.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
-select,button,input,textarea{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
-button{cursor:pointer;background:#0366d6;color:#fff;border:none}
-button.gray{background:#666}button.red{background:#cf222e}
-table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:6px;font-size:14px}
-pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
-.st0{color:#9a6700}.st1{color:#1a7f37}.st2{color:#cf222e}
+:root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#4f46e5;--pri-d:#4338ca;--green:#059669;--red:#dc2626;--amber:#d97706}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#134e4a,#0f766e);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:14px}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar .back{color:#99f6e4;text-decoration:none;font-size:13px;border:1px solid rgba(153,246,228,.4);border-radius:8px;padding:4px 12px}
+.topbar .back:hover{background:rgba(255,255,255,.08)}
+.topbar .chip{margin-left:auto;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 14px}
+.wrap{max-width:960px;margin:24px auto 60px;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.card h2{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:4px;height:16px;background:#0d9488;border-radius:2px}
+select,button,input,textarea{padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+button{cursor:pointer;background:var(--pri);color:#fff;border:none;font-weight:600;margin-left:6px}
+button:hover{background:var(--pri-d)}
+button.gray{background:#64748b}button.red{background:var(--red)}button.red:hover{background:#b91c1c}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;color:var(--sub);font-weight:600;font-size:12px;border-bottom:1.5px solid var(--line);padding:6px 8px}
+td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+tr:hover td{background:#f8fafc}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:10px;font-size:12px;white-space:pre-wrap;font-family:Consolas,monospace;margin:8px 0}
+.st0{color:var(--amber);font-weight:700}.st1{color:var(--green);font-weight:700}.st2{color:var(--red);font-weight:700}
+p{margin:8px 0}
+label{font-size:12.5px;color:var(--sub)}
+i{color:var(--sub)}
 </style>
 </head>
 <body>
-<h1><a href="/">←</a> 客服端（agent1）</h1>
+<div class="topbar"><a class="back" href="/">← 返回</a><h1>客服端 · 申诉核查</h1><span class="chip">agent1</span></div>
+<main class="wrap">
 
 <div class="card">
+<h2>筛选</h2>
 状态过滤：
 <select id="st"><option value="">全部</option><option value="0">待处理</option><option value="1">已补发</option><option value="2">已驳回</option></select>
 <button onclick="loadList()">刷新列表</button>
 </div>
 
 <div class="card"><h2>申诉列表</h2><div id="list"></div></div>
-<div class="card"><h2>核查详情</h2><div id="detail"><i>点击列表中的申诉</i></div></div>
+<div class="card"><h2>核查详情</h2><div id="detail"><i>点击列表中的申诉进行核查（证据源：阅读服务可信记录，只读）</i></div></div>
 
 <script>
 const tok="agent-token-1";
@@ -59,5 +78,6 @@ async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+
 alert(status==200?"已驳回":body.error);detail(id);loadList();}
 loadList();
 </script>
+</main>
 </body>
 </html>

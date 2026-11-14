@@ -4,37 +4,54 @@
 <meta charset="utf-8">
 <title>运营端 - 活动与结算核查</title>
 <style>
-body{font-family:system-ui,"Microsoft YaHei";max-width:960px;margin:24px auto;padding:0 16px;color:#222}
-h1{font-size:20px}h2{font-size:16px;margin-top:18px}
-.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
-input,button{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
-button{cursor:pointer;background:#0366d6;color:#fff;border:none}
-table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:6px;font-size:14px}
-pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
-.ok{color:#1a7f37}.bad{color:#cf222e}
+:root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#4f46e5;--pri-d:#4338ca;--green:#059669;--red:#dc2626;--amber:#d97706}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#312e81,#4f46e5);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:14px}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar .back{color:#c7d2fe;text-decoration:none;font-size:13px;border:1px solid rgba(199,210,254,.4);border-radius:8px;padding:4px 12px}
+.topbar .back:hover{background:rgba(255,255,255,.08)}
+.topbar .chip{margin-left:auto;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 14px}
+.wrap{max-width:960px;margin:24px auto 60px;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.card h2{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:4px;height:16px;background:var(--pri);border-radius:2px}
+input,button{padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;outline:none}
+input:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+button{cursor:pointer;background:var(--pri);color:#fff;border:none;font-weight:600;margin-left:6px}
+button:hover{background:var(--pri-d)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;color:var(--sub);font-weight:600;font-size:12px;border-bottom:1.5px solid var(--line);padding:6px 8px}
+td{border-bottom:1px solid var(--line);padding:7px 8px;font-family:Consolas,monospace;font-size:12.5px}
+tr:hover td{background:#f8fafc}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:10px;font-size:12px;white-space:pre-wrap;font-family:Consolas,monospace}
+.ok{color:var(--green);font-weight:700}.bad{color:var(--red);font-weight:700}.st0{color:var(--amber);font-weight:700}
+p{margin:8px 0}
+label{font-size:12.5px;color:var(--sub);margin-right:4px}
 </style>
 </head>
 <body>
-<h1><a href="/">←</a> 运营端（ops1）</h1>
+<div class="topbar"><a class="back" href="/">← 返回</a><h1>运营端 · 活动与结算核查</h1><span class="chip">ops1</span></div>
+<main class="wrap">
 
-<div class="card"><h2>发布活动（发布后规则固定）</h2>
-名称 <input id="name" value="每日阅读三篇文章得积分">
-开始 <input id="start" type="datetime-local" step="1">
-结束 <input id="end" type="datetime-local" step="1">
-每日门槛 <input id="th" type="number" value="3" style="width:60px">
-积分数 <input id="pts" type="number" value="30" style="width:60px">
+<div class="card"><h2>发布活动（发布后规则固定，重复发布 409）</h2>
+<label>名称</label><input id="name" value="每日阅读三篇文章得积分" style="width:220px">
+<label>开始</label><input id="start" type="datetime-local" step="1">
+<label>结束</label><input id="end" type="datetime-local" step="1">
+<label>每日门槛</label><input id="th" type="number" value="3" style="width:64px">
+<label>积分数</label><input id="pts" type="number" value="30" style="width:64px">
 <button onclick="publish()">发布</button><span id="pubResult"></span></div>
 
-<div class="card"><h2>结算核查汇总</h2>
+<div class="card"><h2>结算核查汇总（迟到窗口关闭后核查）</h2>
 <button onclick="loadSummary()">刷新</button>
 <div id="summary"></div></div>
 
 <script>
 const tok="ops-token-1";
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+tok,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
 const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
 document.getElementById("start").value=today+"T00:00:00";
 document.getElementById("end").value=today+"T23:59:59";
-async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+tok,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
 async function publish(){const s=document.getElementById("start").value,e=document.getElementById("end").value;
 const toTs=v=>{v=v.replace(" ","T");return v.length==16?v+":00+08:00":v.length==19?v+"+08:00":v};
 const body={name:document.getElementById("name").value,start_at:toTs(s),end_at:toTs(e),daily_threshold:+document.getElementById("th").value,reward_points:+document.getElementById("pts").value};
@@ -50,5 +67,6 @@ h+=`<p>发奖明细：</p><pre>${JSON.stringify(body.rewards,null,1)}</pre>`;
 document.getElementById("summary").innerHTML=h;}
 loadSummary();
 </script>
+</main>
 </body>
 </html>

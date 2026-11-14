@@ -4,26 +4,39 @@
 <meta charset="utf-8">
 <title>模拟阅读服务</title>
 <style>
-body{font-family:system-ui,"Microsoft YaHei";max-width:860px;margin:24px auto;padding:0 16px;color:#222}
-h1{font-size:20px}h2{font-size:16px;margin-top:18px}
-.card{border:1px solid #ddd;border-radius:8px;padding:14px;margin:10px 0}
-input,select,button{padding:6px 10px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:4px}
-button{cursor:pointer;background:#0366d6;color:#fff;border:none}
-pre{background:#f6f8fa;padding:10px;border-radius:6px;font-size:12px;white-space:pre-wrap}
-label{margin-right:10px}
+:root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#d97706;--pri-d:#b45309;--green:#059669;--red:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#78350f,#b45309);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:14px}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar .back{color:#fde68a;text-decoration:none;font-size:13px;border:1px solid rgba(253,230,138,.4);border-radius:8px;padding:4px 12px}
+.topbar .back:hover{background:rgba(255,255,255,.08)}
+.topbar .chip{margin-left:auto;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 14px}
+.wrap{max-width:860px;margin:24px auto 60px;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.card h2{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:4px;height:16px;background:var(--pri);border-radius:2px}
+input,select,button{padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;outline:none}
+input:focus,select:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(217,119,6,.12)}
+button{cursor:pointer;background:var(--pri);color:#fff;border:none;font-weight:600;margin-left:6px}
+button:hover{background:var(--pri-d)}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:10px;font-size:12px;white-space:pre-wrap;font-family:Consolas,monospace}
+label{font-size:12.5px;color:var(--sub);margin-right:10px}
 </style>
 </head>
 <body>
-<h1><a href="http://localhost:8080/">←</a> 模拟阅读服务（可信证据源）</h1>
+<div class="topbar"><a class="back" href="http://localhost:8090/">← 返回</a><h1>模拟阅读服务</h1><span class="chip">可信证据源 · :8081</span></div>
+<main class="wrap">
 
-<div class="card"><h2>模拟阅读</h2>
-用户ID <input id="uid" type="number" value="3" style="width:70px">
-文章ID <input id="aid" type="number" style="width:70px">
-<label><input type="checkbox" id="drop"> 丢弃投递（模拟消息丢失，申诉演示用）</label>
+<div class="card"><h2>模拟阅读（产生可信记录并投递事件）</h2>
+<label>用户ID</label><input id="uid" type="number" value="3" style="width:80px">
+<label>文章ID</label><input id="aid" type="number" style="width:80px">
+<label><input type="checkbox" id="drop" style="margin-right:4px"> 丢弃投递（模拟消息丢失，申诉演示用）</label>
 <button onclick="read()">阅读并投递</button></div>
 
-<div class="card"><h2>异常事件触发</h2>
-场景 <select id="sc">
+<div class="card"><h2>异常事件触发（对应四类拒绝路径）</h2>
+<label>场景</label>
+<select id="sc">
 <option value="duplicate">duplicate 同编号重复投递</option>
 <option value="conflict">conflict 同编号换内容</option>
 <option value="future">future 未来事件</option>
@@ -32,14 +45,14 @@ label{margin-right:10px}
 <option value="too_late">too_late 超24小时窗口</option>
 <option value="custom">custom 自定义发生时间</option>
 </select>
-用户ID <input id="suid" type="number" value="3" style="width:70px">
-文章ID <input id="said" type="number" style="width:70px">
-自定义时间 <input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:220px">
+<label>用户ID</label><input id="suid" type="number" value="3" style="width:80px">
+<label>文章ID</label><input id="said" type="number" style="width:80px">
+<label>自定义时间</label><input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
 <button onclick="simulate()">触发</button></div>
 
-<div class="card"><h2>可信查询</h2>
-用户ID <input id="quid" type="number" style="width:70px">
-业务日 <input id="qdate" type="date">
+<div class="card"><h2>可信查询（客服核查证据源，只读）</h2>
+<label>用户ID</label><input id="quid" type="number" style="width:80px">
+<label>业务日</label><input id="qdate" type="date">
 <button onclick="query()">查询</button>
 <div id="out"><pre>结果…</pre></div></div>
 
@@ -55,5 +68,6 @@ const{body:res}=await req("/simulate",{method:"POST",headers:{"Content-Type":"ap
 async function query(){const u=document.getElementById("quid").value,d=document.getElementById("qdate").value;
 const{body}=await req("/trusted/records?user_id="+u+"&biz_date="+d);show(body);}
 </script>
+</main>
 </body>
 </html>
