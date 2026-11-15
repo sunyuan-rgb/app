@@ -23,6 +23,7 @@ select:focus,input:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0
 button{cursor:pointer;background:var(--pri);color:#fff;border:none;font-weight:600;margin-left:6px}
 button:hover{background:var(--pri-d)}
 button.gray{background:#64748b}button.red{background:var(--red)}button.red:hover{background:#b91c1c}
+
 table{border-collapse:collapse;width:100%;font-size:13px}
 th{text-align:left;color:var(--sub);font-weight:600;font-size:12px;border-bottom:1.5px solid var(--line);padding:6px 8px}
 td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
@@ -37,13 +38,12 @@ i{color:var(--sub)}
 .auth .card{padding:28px 30px}
 .auth input{width:100%;margin-bottom:12px;padding:9px 12px}
 .auth button{width:100%;margin:6px 0 0;padding:10px}
-#authMsg{font-size:12.5px;margin-top:12px;min-height:18px}
 .ok{color:var(--green);font-weight:700}.bad{color:var(--red);font-weight:700}
 </style>
 </head>
 <body>
-<div class="topbar"><a class="back" href="/">← 返回</a><h1>客服工作台 · 申诉核查</h1>
-<span class="chip"><span id="who-chip">未登录</span><button id="btn-logout" style="display:none" onclick="logout()">退出</button></span></div>
+<div class="topbar"><h1>客服工作台 · 申诉核查</h1>
+<span class="chip"><span id="who-chip"></span><button onclick="logout()">退出登录</button></span></div>
 <main class="wrap">
 
 <div id="app">
