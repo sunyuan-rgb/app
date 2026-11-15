@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>客服端 - 申诉核查</title>
+<title>客服工作台 - 申诉核查</title>
 <style>
 :root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#4f46e5;--pri-d:#4338ca;--green:#059669;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -11,7 +11,9 @@ body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);col
 .topbar h1{font-size:17px;font-weight:700}
 .topbar .back{color:#99f6e4;text-decoration:none;font-size:13px;border:1px solid rgba(153,246,228,.4);border-radius:8px;padding:4px 12px}
 .topbar .back:hover{background:rgba(255,255,255,.08)}
-.topbar .chip{margin-left:auto;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 14px}
+.topbar .chip{margin-left:auto;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:4px 14px;display:flex;align-items:center;gap:10px}
+.topbar .chip button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:2px 10px;font-size:11.5px;margin-left:0;cursor:pointer}
+.topbar .chip button:hover{background:rgba(255,255,255,.25)}
 .wrap{max-width:960px;margin:24px auto 60px;padding:0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
 .card h2{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -30,53 +32,111 @@ pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:10px;font-s
 p{margin:8px 0}
 label{font-size:12.5px;color:var(--sub)}
 i{color:var(--sub)}
+/* 登录门 */
+.auth{max-width:400px;margin:60px auto}
+.auth .card{padding:28px 30px}
+.auth input{width:100%;margin-bottom:12px;padding:9px 12px}
+.auth button{width:100%;margin:6px 0 0;padding:10px}
+#authMsg{font-size:12.5px;margin-top:12px;min-height:18px}
+.ok{color:var(--green);font-weight:700}.bad{color:var(--red);font-weight:700}
 </style>
 </head>
 <body>
-<div class="topbar"><a class="back" href="/">← 返回</a><h1>客服端 · 申诉核查</h1><span class="chip">agent1</span></div>
+<div class="topbar"><a class="back" href="/">← 返回</a><h1>客服工作台 · 申诉核查</h1>
+<span class="chip"><span id="who-chip">未登录</span><button id="btn-logout" style="display:none" onclick="logout()">退出</button></span></div>
 <main class="wrap">
 
+<div id="authCard" class="auth" style="display:none">
 <div class="card">
-<h2>筛选</h2>
+<h2>客服账号登录</h2>
+<input id="auth-user" placeholder="账号名" autocomplete="username">
+<input id="auth-pass" type="password" placeholder="密码" autocomplete="current-password">
+<button onclick="authSubmit()">登 录</button>
+<div id="authMsg"></div>
+</div>
+</div>
+
+<div id="app" style="display:none">
+<div class="card">
+<h2>申诉筛选</h2>
 状态过滤：
 <select id="st"><option value="">全部</option><option value="0">待处理</option><option value="1">已补发</option><option value="2">已驳回</option></select>
 <button onclick="loadList()">刷新列表</button>
 </div>
 
 <div class="card"><h2>申诉列表</h2><div id="list"></div></div>
-<div class="card"><h2>核查详情</h2><div id="detail"><i>点击列表中的申诉进行核查（证据源：阅读服务可信记录，只读）</i></div></div>
+<div class="card"><h2>核查详情</h2><div id="detail"><i>在列表中选择一条申诉，查看事件、进度与证据记录</i></div></div>
+</div>
 
 <script>
-const tok="agent-token-1";
-async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+tok,...(opts.headers||{})}});return{status:r.status,body:await r.json()};}
+function getToken(){return localStorage.getItem("t10_agent_token")||""}
+function getUser(){return localStorage.getItem("t10_agent_user")||""}
+
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+getToken(),...(opts.headers||{})}});
+  return{status:r.status,body:await r.json()};
+}
+
+async function authSubmit(){
+  const u=document.getElementById("auth-user").value.trim(),p=document.getElementById("auth-pass").value;
+  const m=document.getElementById("authMsg");
+  if(!u||!p){m.innerHTML='<span class="bad">请输入账号名和密码</span>';return}
+  const r=await fetch("/api/v1/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
+  const b=await r.json();
+  if(r.status!==200){m.innerHTML=`<span class="bad">${b.error||r.status}</span>`;return}
+  if(b.role!=="agent"){m.innerHTML='<span class="bad">该账号无客服工作台权限</span>';return}
+  localStorage.setItem("t10_agent_token",b.token);
+  localStorage.setItem("t10_agent_user",b.username);
+  init();
+}
+
+function logout(){
+  localStorage.removeItem("t10_agent_token");localStorage.removeItem("t10_agent_user");
+  init();
+}
+
+function init(){
+  const has=!!getToken();
+  document.getElementById("authCard").style.display=has?"none":"";
+  document.getElementById("app").style.display=has?"":"none";
+  document.getElementById("btn-logout").style.display=has?"":"none";
+  document.getElementById("who-chip").textContent=has?getUser():"未登录";
+  if(has){loadList();}else{
+    document.getElementById("auth-user").value="";document.getElementById("auth-pass").value="";
+    document.getElementById("authMsg").innerHTML="";}
+}
+
 const stName=["<span class='st0'>待处理</span>","<span class='st1'>已补发</span>","<span class='st2'>已驳回</span>"];
-async function loadList(){const{body}=await api("/api/v1/agent/appeals?status="+document.getElementById("st").value);
+async function loadList(){const{status,body}=await api("/api/v1/agent/appeals?status="+document.getElementById("st").value);
+if(status===401||status===403){logout();return}
 document.getElementById("list").innerHTML="<table><tr><th>ID</th><th>用户</th><th>业务日</th><th>状态</th><th>内容</th><th></th></tr>"+
 (body.appeals||[]).map(a=>`<tr><td>${a.id}</td><td>${a.user_id}</td><td>${a.biz_date}</td><td>${stName[a.status]||a.status}</td><td>${a.content}</td>
 <td><button onclick="detail(${a.id})">核查</button></td></tr>`).join("")+"</table>";}
 async function detail(id){const{status,body}=await api("/api/v1/agent/appeals/"+id);
+if(status===401||status===403){logout();return}
 if(status!=200){document.getElementById("detail").innerHTML=body.error;return;}
 const d=body;
 let h=`<p>申诉 #${d.appeal.id} 用户 ${d.appeal.user_id} 业务日 ${d.appeal.biz_date} 状态 ${stName[d.appeal.status]||d.appeal.status}</p>`;
 h+=`<p>申诉内容：${d.appeal.content}</p>`;
 if(d.appeal.status==0){
-h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="rs-3-..." style="width:220px">
+h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="事件编号" style="width:220px">
 文章ID <input id="aid" type="number" style="width:80px">
 发生时间 <input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
-<button onclick="compensate(${id})">补入并走统一发奖规则</button></p>`;
+<button onclick="compensate(${id})">补入并按统一规则发奖</button></p>`;
 h+=`<p><b>驳回</b>：<input id="concl" placeholder="驳回依据（必填）" style="width:420px">
 <button class="red" onclick="reject(${id})">驳回</button></p>`;}
 else{h+=`<p>处理结论：${d.appeal.conclusion||"-"}（操作者 #${d.appeal.operator_id}）</p>`;}
 h+=`<p>已接收事件：</p><pre>${JSON.stringify(d.accepted_events,null,1)}</pre>`;
 h+=`<p>本地进度/发奖：</p><pre>${JSON.stringify(d.progress,null,1)}${d.reward_id?" 发奖记录 #"+d.reward_id+"（"+d.reward_points+"分）":""}</pre>`;
-h+=`<p>阅读服务可信查询：${d.trusted_note?`<i>${d.trusted_note}</i>`:""}</p><pre>${d.trusted_records?JSON.stringify(d.trusted_records,null,1):""}</pre>`;
+h+=`<p>阅读服务记录查询：${d.trusted_note?`<i>${d.trusted_note}</i>`:""}</p><pre>${d.trusted_records?JSON.stringify(d.trusted_records,null,1):""}</pre>`;
 document.getElementById("detail").innerHTML=h;}
 async function compensate(id){const o=document.getElementById("oat").value;
 const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_id:document.getElementById("eid").value,article_id:+document.getElementById("aid").value,occur_at:o})});
 alert(status==200?(body.handle_result.status+(body.resolved?"｜已结案":"")):body.error);detail(id);loadList();}
 async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+id+"/reject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conclusion:document.getElementById("concl").value})});
 alert(status==200?"已驳回":body.error);detail(id);loadList();}
-loadList();
+
+init();
 </script>
 </main>
 </body>
