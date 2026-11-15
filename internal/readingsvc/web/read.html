@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>模拟阅读服务</title>
+<title>阅读服务控制台</title>
 <style>
 :root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#d97706;--pri-d:#b45309;--green:#059669;--red:#dc2626}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -25,32 +25,32 @@ label{font-size:12.5px;color:var(--sub);margin-right:10px}
 </style>
 </head>
 <body>
-<div class="topbar"><a class="back" href="http://localhost:8090/">← 返回</a><h1>模拟阅读服务</h1><span class="chip">可信证据源 · :8081</span></div>
+<div class="topbar"><a class="back" href="http://localhost:8090/">← 返回</a><h1>阅读服务控制台</h1><span class="chip">内容证据源</span></div>
 <main class="wrap">
 
-<div class="card"><h2>模拟阅读（产生可信记录并投递事件）</h2>
+<div class="card"><h2>阅读记录上报</h2>
 <label>用户ID</label><input id="uid" type="number" value="3" style="width:80px">
 <label>文章ID</label><input id="aid" type="number" style="width:80px">
-<label><input type="checkbox" id="drop" style="margin-right:4px"> 丢弃投递（模拟消息丢失，申诉演示用）</label>
-<button onclick="read()">阅读并投递</button></div>
+<label><input type="checkbox" id="drop" style="margin-right:4px"> 仅记录，不上报事件</label>
+<button onclick="read()">提交</button></div>
 
-<div class="card"><h2>异常事件触发（对应四类拒绝路径）</h2>
+<div class="card"><h2>事件模拟</h2>
 <label>场景</label>
 <select id="sc">
-<option value="duplicate">duplicate 同编号重复投递</option>
-<option value="conflict">conflict 同编号换内容</option>
+<option value="duplicate">duplicate 重复投递</option>
+<option value="conflict">conflict 编号冲突</option>
 <option value="future">future 未来事件</option>
-<option value="late_cross_day">late_cross_day 昨日23:59 跨日迟到</option>
-<option value="cross_day_normal">cross_day_normal 昨日23:30</option>
-<option value="too_late">too_late 超24小时窗口</option>
-<option value="custom">custom 自定义发生时间</option>
+<option value="late_cross_day">late_cross_day 跨日迟到</option>
+<option value="cross_day_normal">cross_day_normal 当日有效</option>
+<option value="too_late">too_late 超出窗口</option>
+<option value="custom">custom 自定义时间</option>
 </select>
 <label>用户ID</label><input id="suid" type="number" value="3" style="width:80px">
 <label>文章ID</label><input id="said" type="number" style="width:80px">
-<label>自定义时间</label><input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
-<button onclick="simulate()">触发</button></div>
+<label>发生时间</label><input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
+<button onclick="simulate()">执行</button></div>
 
-<div class="card"><h2>可信查询（客服核查证据源，只读）</h2>
+<div class="card"><h2>记录查询</h2>
 <label>用户ID</label><input id="quid" type="number" style="width:80px">
 <label>业务日</label><input id="qdate" type="date">
 <button onclick="query()">查询</button>
