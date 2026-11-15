@@ -49,6 +49,15 @@ func New(d Deps) *gin.Engine {
 		events.POST("", eventHandler.Create)
 	}
 
+	// 认证流（公开路由）：注册/登录，成功后前端以返回的会话令牌访问受保护端点
+	authSvc := service.NewAuthService(d.DB, d.Clk)
+	authHandler := handler.NewAuthHandler(authSvc)
+	auth := r.Group("/api/v1/auth")
+	{
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/register", authHandler.Register)
+	}
+
 	// 用户端（令牌解析身份，用户编号不可由请求参数指定）
 	userSvc := service.NewUserService(d.DB, d.Clk)
 	userHandler := handler.NewUserHandler(userSvc)

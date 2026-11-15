@@ -7,11 +7,13 @@ import (
 	"time"
 )
 
-// Account 预置账号。
+// Account 预置账号（认证流扩展：含令牌与口令哈希）。
 type Account struct {
-	ID       int64
-	Username string
-	Role     string
+	ID           int64
+	Username     string
+	Role         string
+	Token        string
+	PasswordHash sql.NullString
 }
 
 // GetAccountByToken 按访问令牌解析账号身份。
