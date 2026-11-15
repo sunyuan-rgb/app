@@ -16,16 +16,16 @@ const (
 
 // Appeal 申诉记录。
 type Appeal struct {
-	ID         int64
-	UserID     int64
-	ActivityID int64
-	BizDate    string
-	Content    string
-	Status     int8
-	Conclusion string
-	OperatorID int64
-	HandledAt  sql.NullTime
-	CreatedAt  time.Time
+	ID         int64        `json:"id"`
+	UserID     int64        `json:"user_id"`
+	ActivityID int64        `json:"activity_id"`
+	BizDate    string       `json:"biz_date"`
+	Content    string       `json:"content"`
+	Status     int8         `json:"status"`
+	Conclusion string       `json:"conclusion"`
+	OperatorID int64        `json:"operator_id"`
+	HandledAt  sql.NullTime `json:"handled_at,omitempty"`
+	CreatedAt  time.Time    `json:"created_at"`
 }
 
 // ListAppeals 按状态列出申诉；status 为 nil 时列出全部。

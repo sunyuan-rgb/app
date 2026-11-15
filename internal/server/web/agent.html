@@ -50,7 +50,7 @@ i{color:var(--sub)}
 <div class="card">
 <h2>申诉筛选</h2>
 状态过滤：
-<select id="st"><option value="">全部</option><option value="0">待处理</option><option value="1">已补发</option><option value="2">已驳回</option></select>
+<select id="st" onchange="loadList()"><option value="">全部</option><option value="0">待处理</option><option value="1">已补发</option><option value="2">已驳回</option></select>
 <button onclick="loadList()">刷新列表</button>
 </div>
 
