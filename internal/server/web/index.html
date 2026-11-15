@@ -4,31 +4,75 @@
 <meta charset="utf-8">
 <title>资讯 App 阅读活动系统</title>
 <style>
-:root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#4f46e5}
+:root{--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--pri:#4f46e5;--pri-d:#4338ca;--red:#dc2626;--green:#059669}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
-.topbar{background:linear-gradient(135deg,#1e1b4b,#3730a3);color:#fff;padding:34px 40px 30px}
-.topbar h1{font-size:22px;font-weight:700;letter-spacing:1px}
-.topbar p{font-size:13px;color:#c7d2fe;margin-top:8px;letter-spacing:2px}
-.wrap{max-width:960px;margin:30px auto 60px;padding:0 16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-a.portal{display:flex;flex-direction:column;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;text-decoration:none;color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.06);transition:.15s}
-a.portal:hover{border-color:var(--pri);transform:translateY(-2px);box-shadow:0 8px 20px rgba(79,70,229,.12)}
-a.portal b{font-size:16px}
-a.portal span{font-size:13px;color:var(--sub);line-height:1.7}
-.foot{margin-top:26px;text-align:center;font-size:12px;color:var(--sub)}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;color:var(--ink);font-size:14px;min-height:100vh;display:flex;flex-direction:column;background:linear-gradient(160deg,#1e1b4b 0%,#312e81 45%,#4f46e5 100%)}
+.brand{color:#fff;text-align:center;padding:64px 20px 26px}
+.brand h1{font-size:24px;font-weight:700;letter-spacing:2px}
+.brand p{font-size:13px;color:#c7d2fe;margin-top:8px;letter-spacing:3px}
+.login{background:#fff;width:400px;margin:0 auto;border-radius:16px;padding:30px 34px 26px;box-shadow:0 16px 40px rgba(15,23,42,.25)}
+.login h2{font-size:16px;margin-bottom:18px;text-align:center}
+.login input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;margin-bottom:14px;outline:none}
+.login input:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+.login button{width:100%;padding:11px;background:var(--pri);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.login button:hover{background:var(--pri-d)}
+.login button.ghost{background:#f1f5f9;color:var(--sub);font-weight:500;margin-top:10px}
+.login button.ghost:hover{background:#e2e8f0}
+#msg{font-size:12.5px;margin-top:12px;min-height:18px;text-align:center}
+.bad{color:var(--red);font-weight:600}.ok{color:var(--green);font-weight:600}
+.switch{text-align:center;font-size:12.5px;color:var(--sub);margin-top:14px}
+.switch a{color:var(--pri);cursor:pointer;text-decoration:none}
+.foot{text-align:center;color:#a5b4fc;font-size:12px;padding:30px 0 24px;margin-top:auto}
 </style>
 </head>
 <body>
-<div class="topbar"><h1>资讯 App 阅读活动系统</h1><p>每日阅读 · 公平奖励 · 透明结算</p></div>
-<div class="wrap">
-<div class="grid">
-<a class="portal" href="/user"><b>用户中心</b><span>参与阅读活动，查看每日进度与积分明细，发起申诉</span></a>
-<a class="portal" href="/agent"><b>客服工作台</b><span>申诉核查与处理，核对证据记录，执行补发或驳回</span></a>
-<a class="portal" href="/ops"><b>运营管理台</b><span>发布与结束后核查活动，监督奖励发放与申诉处理</span></a>
-<a class="portal" href="http://localhost:8081/"><b>阅读服务控制台</b><span>阅读行为记录与查询，为奖励结算提供可信依据</span></a>
+<div class="brand"><h1>资讯 App 阅读活动系统</h1><p>每日阅读 · 公平奖励 · 透明结算</p></div>
+
+<div class="login">
+<h2 id="loginTitle">账号登录</h2>
+<input id="auth-user" placeholder="账号名" autocomplete="username">
+<input id="auth-pass" type="password" placeholder="密码" autocomplete="current-password">
+<button onclick="authSubmit()">登 录</button>
+<button class="ghost" id="regBtn" style="display:none" onclick="authSubmit()">注册并进入</button>
+<div id="msg"></div>
+<div class="switch" id="switchRow">还没有账号？<a onclick="toggleMode(true)">注册新账号</a></div>
+<div class="switch" id="backRow" style="display:none">已有账号？<a onclick="toggleMode(false)">返回登录</a></div>
 </div>
-<div class="foot">各工作台独立鉴权，请使用对应角色账号登录</div>
-</div>
+
+<div class="foot">登录后将自动进入对应角色的工作台</div>
+
+<script>
+let mode="login";
+const HOME={user:"/user",agent:"/agent",ops:"/ops"};
+
+function toggleMode(toReg){
+  mode=toReg?"register":"login";
+  document.getElementById("loginTitle").textContent=toReg?"注册新账号":"账号登录";
+  document.getElementById("regBtn").style.display=toReg?"":"none";
+  document.getElementById("switchRow").style.display=toReg?"none":"";
+  document.getElementById("backRow").style.display=toReg?"":"none";
+  document.getElementById("msg").innerHTML="";
+}
+
+async function authSubmit(){
+  const u=document.getElementById("auth-user").value.trim(),p=document.getElementById("auth-pass").value;
+  const m=document.getElementById("msg");
+  if(!u||!p){m.innerHTML='<span class="bad">请输入账号名和密码</span>';return}
+  const r=await fetch("/api/v1/auth/"+mode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
+  const b=await r.json();
+  if(r.status!==200&&r.status!==201){m.innerHTML=`<span class="bad">${b.error||r.status}</span>`;return}
+  localStorage.setItem("t10_token",b.token);
+  localStorage.setItem("t10_user",b.username);
+  localStorage.setItem("t10_role",b.role);
+  m.innerHTML='<span class="ok">登录成功，正在进入…</span>';
+  setTimeout(()=>{location.href=HOME[b.role]||"/"},400);
+}
+
+// 已登录用户直接送回对应工作台
+(function(){
+  const t=localStorage.getItem("t10_token"),r=localStorage.getItem("t10_role");
+  if(t&&HOME[r])location.replace(HOME[r]);
+})();
+</script>
 </body>
 </html>

@@ -46,17 +46,7 @@ i{color:var(--sub)}
 <span class="chip"><span id="who-chip">未登录</span><button id="btn-logout" style="display:none" onclick="logout()">退出</button></span></div>
 <main class="wrap">
 
-<div id="authCard" class="auth" style="display:none">
-<div class="card">
-<h2>客服账号登录</h2>
-<input id="auth-user" placeholder="账号名" autocomplete="username">
-<input id="auth-pass" type="password" placeholder="密码" autocomplete="current-password">
-<button onclick="authSubmit()">登 录</button>
-<div id="authMsg"></div>
-</div>
-</div>
-
-<div id="app" style="display:none">
+<div id="app">
 <div class="card">
 <h2>申诉筛选</h2>
 状态过滤：
@@ -69,43 +59,23 @@ i{color:var(--sub)}
 </div>
 
 <script>
-function getToken(){return localStorage.getItem("t10_agent_token")||""}
-function getUser(){return localStorage.getItem("t10_agent_user")||""}
-
-async function api(path,opts={}){
-  const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+getToken(),...(opts.headers||{})}});
-  return{status:r.status,body:await r.json()};
-}
-
-async function authSubmit(){
-  const u=document.getElementById("auth-user").value.trim(),p=document.getElementById("auth-pass").value;
-  const m=document.getElementById("authMsg");
-  if(!u||!p){m.innerHTML='<span class="bad">请输入账号名和密码</span>';return}
-  const r=await fetch("/api/v1/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
-  const b=await r.json();
-  if(r.status!==200){m.innerHTML=`<span class="bad">${b.error||r.status}</span>`;return}
-  if(b.role!=="agent"){m.innerHTML='<span class="bad">该账号无客服工作台权限</span>';return}
-  localStorage.setItem("t10_agent_token",b.token);
-  localStorage.setItem("t10_agent_user",b.username);
-  init();
-}
+const ROLE="agent";
+const token=localStorage.getItem("t10_token")||"";
+if(!token||localStorage.getItem("t10_role")!==ROLE)location.replace("/");
+document.getElementById("who-chip").textContent=localStorage.getItem("t10_user")||"";
 
 function logout(){
-  localStorage.removeItem("t10_agent_token");localStorage.removeItem("t10_agent_user");
-  init();
+  ["t10_token","t10_user","t10_role"].forEach(k=>localStorage.removeItem(k));
+  location.href="/";
 }
 
-function init(){
-  const has=!!getToken();
-  document.getElementById("authCard").style.display=has?"none":"";
-  document.getElementById("app").style.display=has?"":"none";
-  document.getElementById("btn-logout").style.display=has?"":"none";
-  document.getElementById("who-chip").textContent=has?getUser():"未登录";
-  if(has){loadList();}else{
-    document.getElementById("auth-user").value="";document.getElementById("auth-pass").value="";
-    document.getElementById("authMsg").innerHTML="";}
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+token,...(opts.headers||{})}});
+  return{status:r.status,body:await r.json()};
 }
+function sessionLost(){logout()}
 
+loadList();
 const stName=["<span class='st0'>待处理</span>","<span class='st1'>已补发</span>","<span class='st2'>已驳回</span>"];
 async function loadList(){const{status,body}=await api("/api/v1/agent/appeals?status="+document.getElementById("st").value);
 if(status===401||status===403){logout();return}
@@ -135,8 +105,6 @@ const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"
 alert(status==200?(body.handle_result.status+(body.resolved?"｜已结案":"")):body.error);detail(id);loadList();}
 async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+id+"/reject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conclusion:document.getElementById("concl").value})});
 alert(status==200?"已驳回":body.error);detail(id);loadList();}
-
-init();
 </script>
 </main>
 </body>

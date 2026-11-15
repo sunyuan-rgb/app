@@ -43,17 +43,7 @@ label{font-size:12.5px;color:var(--sub);margin-right:4px}
 <span class="chip"><span id="who-chip">未登录</span><button id="btn-logout" style="display:none" onclick="logout()">退出</button></span></div>
 <main class="wrap">
 
-<div id="authCard" class="auth" style="display:none">
-<div class="card">
-<h2>运营账号登录</h2>
-<input id="auth-user" placeholder="账号名" autocomplete="username">
-<input id="auth-pass" type="password" placeholder="密码" autocomplete="current-password">
-<button onclick="authSubmit()">登 录</button>
-<div id="authMsg"></div>
-</div>
-</div>
-
-<div id="app" style="display:none">
+<div id="app">
 <div class="card"><h2>发布活动</h2>
 <label>名称</label><input id="name" value="每日阅读三篇文章得积分" style="width:220px">
 <label>开始</label><input id="start" type="datetime-local" step="1">
@@ -68,42 +58,21 @@ label{font-size:12.5px;color:var(--sub);margin-right:4px}
 </div>
 
 <script>
-function getToken(){return localStorage.getItem("t10_ops_token")||""}
-function getUser(){return localStorage.getItem("t10_ops_user")||""}
-
-async function api(path,opts={}){
-  const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+getToken(),...(opts.headers||{})}});
-  return{status:r.status,body:await r.json()};
-}
-
-async function authSubmit(){
-  const u=document.getElementById("auth-user").value.trim(),p=document.getElementById("auth-pass").value;
-  const m=document.getElementById("authMsg");
-  if(!u||!p){m.innerHTML='<span class="bad">请输入账号名和密码</span>';return}
-  const r=await fetch("/api/v1/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
-  const b=await r.json();
-  if(r.status!==200){m.innerHTML=`<span class="bad">${b.error||r.status}</span>`;return}
-  if(b.role!=="ops"){m.innerHTML='<span class="bad">该账号无运营管理台权限</span>';return}
-  localStorage.setItem("t10_ops_token",b.token);
-  localStorage.setItem("t10_ops_user",b.username);
-  init();
-}
+const ROLE="ops";
+const token=localStorage.getItem("t10_token")||"";
+if(!token||localStorage.getItem("t10_role")!==ROLE)location.replace("/");
+document.getElementById("who-chip").textContent=localStorage.getItem("t10_user")||"";
 
 function logout(){
-  localStorage.removeItem("t10_ops_token");localStorage.removeItem("t10_ops_user");
-  init();
+  ["t10_token","t10_user","t10_role"].forEach(k=>localStorage.removeItem(k));
+  location.href="/";
 }
 
-function init(){
-  const has=!!getToken();
-  document.getElementById("authCard").style.display=has?"none":"";
-  document.getElementById("app").style.display=has?"":"none";
-  document.getElementById("btn-logout").style.display=has?"":"none";
-  document.getElementById("who-chip").textContent=has?getUser():"未登录";
-  if(has){loadSummary();}else{
-    document.getElementById("auth-user").value="";document.getElementById("auth-pass").value="";
-    document.getElementById("authMsg").innerHTML="";}
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{Authorization:"Bearer "+token,...(opts.headers||{})}});
+  return{status:r.status,body:await r.json()};
 }
+function sessionLost(){logout()}
 
 const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"});
 document.getElementById("start").value=today+"T00:00:00";
@@ -124,7 +93,7 @@ h+=body.inconsistencies.length?`<p class="bad">不一致项（须追溯）：</p
 h+=`<p>发奖明细：</p><pre>${JSON.stringify(body.rewards,null,1)}</pre>`;
 document.getElementById("summary").innerHTML=h;}
 
-init();
+loadSummary();
 </script>
 </main>
 </body>
