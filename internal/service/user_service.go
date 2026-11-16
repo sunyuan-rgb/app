@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -36,23 +35,39 @@ type ActivityView struct {
 	RewardPoints   int    `json:"reward_points"`
 }
 
-// GetActivity 获取当前已发布活动。
-func (s *UserService) GetActivity(ctx context.Context) (*ActivityView, error) {
-	a, err := store.LatestPublishedActivity(ctx, s.db)
+// GetActivities 获取全部已发布活动（多活动并存，按开始时间升序）。
+func (s *UserService) GetActivities(ctx context.Context) ([]*ActivityView, error) {
+	acts, err := store.ListPublishedActivities(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	if a == nil {
-		return nil, nil
+	out := make([]*ActivityView, 0, len(acts))
+	for _, a := range acts {
+		out = append(out, &ActivityView{
+			ID:             a.ID,
+			Name:           a.Name,
+			StartAt:        a.StartAt.In(model.Beijing).Format(time.RFC3339),
+			EndAt:          a.EndAt.In(model.Beijing).Format(time.RFC3339),
+			DailyThreshold: a.DailyThreshold,
+			RewardPoints:   a.RewardPoints,
+		})
 	}
-	return &ActivityView{
-		ID:             a.ID,
-		Name:           a.Name,
-		StartAt:        a.StartAt.In(model.Beijing).Format(time.RFC3339),
-		EndAt:          a.EndAt.In(model.Beijing).Format(time.RFC3339),
-		DailyThreshold: a.DailyThreshold,
-		RewardPoints:   a.RewardPoints,
-	}, nil
+	return out, nil
+}
+
+// activityForBizDate 选取业务日落在其期间内的已发布活动
+// （发布校验保证时间不重叠；同业务日命中多个时取开始最晚的一个）。
+func activityForBizDate(acts []*model.Activity, bizDate string) *model.Activity {
+	var best *model.Activity
+	for _, a := range acts {
+		if bizDate < model.BizDate(a.StartAt) || bizDate > model.BizDate(a.EndAt) {
+			continue
+		}
+		if best == nil || a.StartAt.After(best.StartAt) {
+			best = a
+		}
+	}
+	return best
 }
 
 // ProgressView 每日进度视图。
@@ -84,9 +99,9 @@ func (s *UserService) GetProgress(ctx context.Context, userID int64, dateStr str
 		Articles:      articles,
 		DistinctCount: len(articles),
 	}
-	if a, err := store.LatestPublishedActivity(ctx, s.db); err != nil {
+	if acts, err := store.ListPublishedActivities(ctx, s.db); err != nil {
 		return nil, err
-	} else if a != nil {
+	} else if a := activityForBizDate(acts, bizDate); a != nil {
 		view.Threshold = a.DailyThreshold
 		view.Reached = len(articles) >= a.DailyThreshold
 		if points, rewarded, err := store.GetReward(ctx, s.db, userID, a.ID, bizDate); err != nil {
@@ -138,18 +153,13 @@ func (s *UserService) SubmitAppeal(ctx context.Context, userID int64, dateStr, c
 	if err != nil {
 		return nil, err
 	}
-	activity, err := store.LatestPublishedActivity(ctx, s.db)
+	acts, err := store.ListPublishedActivities(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
+	activity := activityForBizDate(acts, bizDate)
 	if activity == nil {
-		return nil, errors.New("无进行中的已发布活动")
-	}
-	// 申诉的业务日必须落在活动期间内
-	startDate := model.BizDate(activity.StartAt)
-	endDate := model.BizDate(activity.EndAt)
-	if bizDate < startDate || bizDate > endDate {
-		return nil, fmt.Errorf("申诉业务日 %s 不在活动期间 [%s, %s]", bizDate, startDate, endDate)
+		return nil, errors.New("该业务日不在任何已发布活动期间")
 	}
 
 	ok, id, err := store.InsertAppeal(ctx, s.db, userID, activity.ID, bizDate, content)

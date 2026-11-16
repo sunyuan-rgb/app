@@ -37,9 +37,21 @@ func TestOps_PublishValidation(t *testing.T) {
 	if v.ID == 0 {
 		t.Fatalf("应返回活动 ID: %+v", v)
 	}
-	// 重复发布 → ErrActivityExists
-	if _, err := ops.PublishActivity(ctx, in); !errors.Is(err, service.ErrActivityExists) {
-		t.Fatalf("重复发布应 ErrActivityExists: %v", err)
+	// 时间区间重叠 → ErrActivityOverlap
+	if _, err := ops.PublishActivity(ctx, in); !errors.Is(err, service.ErrActivityOverlap) {
+		t.Fatalf("重叠发布应 ErrActivityOverlap: %v", err)
+	}
+	// 不重叠的第二个活动 → 可并存（多活动规则）
+	in2 := in
+	in2.Name = "第二波活动"
+	in2.StartAt = in.EndAt.AddDate(0, 0, 1)
+	in2.EndAt = in2.StartAt.AddDate(0, 0, 2)
+	v2, err := ops.PublishActivity(ctx, in2)
+	if err != nil {
+		t.Fatalf("不重叠活动应可并存: %v", err)
+	}
+	if v2.ID == v.ID {
+		t.Fatal("应生成新的活动 ID")
 	}
 	// 参数校验
 	bad := in
@@ -93,10 +105,13 @@ func TestOps_SummaryConsistency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(v.Days) != 2 {
-		t.Fatalf("应有 2 个业务日（11-11 / 11-12）: %d", len(v.Days))
+	if len(v.Activities) != 1 {
+		t.Fatalf("应只有 1 个活动块: %d", len(v.Activities))
 	}
-	day1, day2 := v.Days[0], v.Days[1]
+	if len(v.Activities[0].Days) != 2 {
+		t.Fatalf("应有 2 个业务日（11-11 / 11-12）: %d", len(v.Activities[0].Days))
+	}
+	day1, day2 := v.Activities[0].Days[0], v.Activities[0].Days[1]
 	if day1.BizDate != "2026-11-11" || day2.BizDate != "2026-11-12" {
 		t.Fatalf("业务日不符: %s / %s", day1.BizDate, day2.BizDate)
 	}
@@ -106,13 +121,13 @@ func TestOps_SummaryConsistency(t *testing.T) {
 	if day2.ReachedUsers != 1 || day2.RewardedUsers != 1 || day2.TotalPoints != 30 {
 		t.Fatalf("day2 汇总不符: %+v", day2)
 	}
-	if len(v.Inconsistencies) != 0 {
-		t.Fatalf("不应有不一致项: %+v", v.Inconsistencies)
+	if len(v.Activities[0].Inconsistencies) != 0 {
+		t.Fatalf("不应有不一致项: %+v", v.Activities[0].Inconsistencies)
 	}
-	if len(v.Rewards) != 3 {
-		t.Fatalf("发奖明细应 3 条: %d", len(v.Rewards))
+	if len(v.Activities[0].Rewards) != 3 {
+		t.Fatalf("发奖明细应 3 条: %d", len(v.Activities[0].Rewards))
 	}
-	if v.WindowClosed {
+	if v.Activities[0].WindowClosed {
 		t.Fatal("结束+24h 未到，窗口未关闭")
 	}
 }
@@ -141,16 +156,16 @@ func TestOps_SummaryDetectsInconsistency(t *testing.T) {
 		t.Fatal(err)
 	}
 	found := false
-	for _, inc := range v.Inconsistencies {
+	for _, inc := range v.Activities[0].Inconsistencies {
 		if inc.Type == "rewarded_not_reached" && inc.BizDate == "2026-11-11" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("应检出 rewarded_not_reached: %+v", v.Inconsistencies)
+		t.Fatalf("应检出 rewarded_not_reached: %+v", v.Activities[0].Inconsistencies)
 	}
-	if v.Days[0].ReachedUsers != 1 || v.Days[0].RewardedUsers != 2 {
-		t.Fatalf("汇总应反映不一致: %+v", v.Days[0])
+	if v.Activities[0].Days[0].ReachedUsers != 1 || v.Activities[0].Days[0].RewardedUsers != 2 {
+		t.Fatalf("汇总应反映不一致: %+v", v.Activities[0].Days[0])
 	}
 }
 
@@ -164,7 +179,7 @@ func TestOps_SummaryWindowClosed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !v.WindowClosed {
+	if !v.Activities[0].WindowClosed {
 		t.Fatal("结束+24h 后窗口应关闭")
 	}
 }
@@ -172,8 +187,12 @@ func TestOps_SummaryWindowClosed(t *testing.T) {
 func TestOps_SummaryNoActivity(t *testing.T) {
 	db := testutil.Setup(t)
 	ops := service.NewOpsService(db, clockFixed(baseNow))
-	if _, err := ops.GetSummary(context.Background()); err == nil {
-		t.Fatal("无活动应报错")
+	v, err := ops.GetSummary(context.Background())
+	if err != nil {
+		t.Fatalf("无活动不应报错: %v", err)
+	}
+	if len(v.Activities) != 0 {
+		t.Fatalf("无活动应返回空列表: %+v", v.Activities)
 	}
 }
 

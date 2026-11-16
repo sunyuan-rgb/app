@@ -17,18 +17,14 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{svc: svc}
 }
 
-// Activity 当前活动信息。GET /api/v1/users/activity
+// Activity 已发布活动列表（多活动并存）。GET /api/v1/users/activity
 func (h *UserHandler) Activity(c *gin.Context) {
-	view, err := h.svc.GetActivity(c.Request.Context())
+	views, err := h.svc.GetActivities(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if view == nil {
-		c.JSON(http.StatusOK, gin.H{"activity": nil})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"activity": view})
+	c.JSON(http.StatusOK, gin.H{"activities": views})
 }
 
 // Progress 每日进度。GET /api/v1/users/progress?date=yyyy-mm-dd

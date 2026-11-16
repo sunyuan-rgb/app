@@ -119,7 +119,8 @@ func AddBalance(ctx context.Context, q Queryer, userID int64, points int) error 
 	return err
 }
 
-// LatestPublishedActivity 查询当前已发布活动（题面为单一固定活动）。
+// LatestPublishedActivity 查询最新发布的活动（兼容保留；多活动并存时业务逻辑
+// 应优先使用 ListPublishedActivities / FindActivityCovering）。
 func LatestPublishedActivity(ctx context.Context, q Queryer) (*model.Activity, error) {
 	row := q.QueryRowContext(ctx, `
 		SELECT id, name, start_at, end_at, daily_threshold, reward_points, status
@@ -135,6 +136,54 @@ func LatestPublishedActivity(ctx context.Context, q Queryer) (*model.Activity, e
 	}
 	a.StartAt, a.EndAt = start, end
 	return &a, nil
+}
+
+// scanActivity 行扫描公共实现。
+func scanActivity(scan func(dest ...any) error) (*model.Activity, error) {
+	var a model.Activity
+	var start, end time.Time
+	err := scan(&a.ID, &a.Name, &start, &end, &a.DailyThreshold, &a.RewardPoints, &a.Status)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	a.StartAt, a.EndAt = start, end
+	return &a, nil
+}
+
+const activityCols = `id, name, start_at, end_at, daily_threshold, reward_points, status`
+
+// ListPublishedActivities 列出全部已发布活动（按开始时间升序）。
+func ListPublishedActivities(ctx context.Context, q Queryer) ([]*model.Activity, error) {
+	rows, err := q.QueryContext(ctx, `
+		SELECT `+activityCols+` FROM activity WHERE status = ? ORDER BY start_at ASC, id ASC`,
+		int16(model.ActivityPublished))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*model.Activity
+	for rows.Next() {
+		a, err := scanActivity(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+// FindActivityCovering 查找时间区间覆盖 t 的已发布活动（发布校验保证不重叠，
+// 至多一个；取最新一个兜底）。
+func FindActivityCovering(ctx context.Context, q Queryer, t time.Time) (*model.Activity, error) {
+	row := q.QueryRowContext(ctx, `
+		SELECT `+activityCols+` FROM activity
+		WHERE status = ? AND start_at <= ? AND end_at >= ?
+		ORDER BY id DESC LIMIT 1`,
+		int16(model.ActivityPublished), t.UTC(), t.UTC())
+	return scanActivity(row.Scan)
 }
 
 func isDuplicateErr(err error) bool {

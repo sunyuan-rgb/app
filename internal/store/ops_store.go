@@ -9,9 +9,12 @@ import (
 // CreateActivity 创建并发布活动（题面为单一固定活动：若已有已发布活动则拒绝）。
 // 返回 false 表示已存在已发布活动。
 func CreateActivity(ctx context.Context, q Queryer, a *ActivityRow) (bool, error) {
+	// 多活动并存：仅拒绝与现有已发布活动时间区间重叠的发布
+	//（区间相交会导致事件无法确定归属，因此重叠仍不可发布）
 	var n int
 	if err := q.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM activity WHERE status = 1`).Scan(&n); err != nil {
+		`SELECT COUNT(*) FROM activity WHERE status = 1 AND start_at < ? AND end_at > ?`,
+		a.EndAt.UTC(), a.StartAt.UTC()).Scan(&n); err != nil {
 		return false, err
 	}
 	if n > 0 {

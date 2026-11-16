@@ -131,20 +131,18 @@ func TestHandler_HappyPaths(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatalf("summary => %d %s", w.Code, w.Body.String())
 	}
-	// 运营发布：已有已发布活动 → 409；无活动的空库 → 200
+	// 运营发布：与现有活动时间重叠 → 409；不重叠 → 200（多活动并存）
+	c, w = testCtx("POST", "/x",
+		`{"name":"重叠活动","start_at":"2026-11-11T00:00:00+08:00","end_at":"2026-11-13T00:00:00+08:00","daily_threshold":3,"reward_points":30}`)
+	opsH.PublishActivity(c)
+	if w.Code != 409 {
+		t.Fatalf("重叠发布 => %d", w.Code)
+	}
 	c, w = testCtx("POST", "/x",
 		`{"name":"新活动","start_at":"2026-11-14T00:00:00+08:00","end_at":"2026-11-16T00:00:00+08:00","daily_threshold":3,"reward_points":30}`)
 	opsH.PublishActivity(c)
-	if w.Code != 409 {
-		t.Fatalf("重复发布 => %d", w.Code)
-	}
-	fresh := testutil.Setup(t)
-	opsH2 := handler.NewOpsHandler(service.NewOpsService(fresh, clk))
-	c, w = testCtx("POST", "/x",
-		`{"name":"新活动","start_at":"2026-11-14T00:00:00+08:00","end_at":"2026-11-16T00:00:00+08:00","daily_threshold":3,"reward_points":30}`)
-	opsH2.PublishActivity(c)
 	if w.Code != 200 {
-		t.Fatalf("发布 => %d %s", w.Code, w.Body.String())
+		t.Fatalf("不重叠发布 => %d %s", w.Code, w.Body.String())
 	}
 }
 

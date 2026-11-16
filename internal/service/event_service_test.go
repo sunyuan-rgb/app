@@ -108,8 +108,8 @@ func TestEvent_RejectedEventsArePersisted(t *testing.T) {
 	}{
 		{"未来事件", bj(23, 0).Add(time.Hour), "发生时间晚于接收时间"},
 		{"超过24小时窗口", baseNow.Add(-25 * time.Hour), "超过 24 小时迟到窗口"},
-		{"活动开始前", time.Date(2026, 11, 10, 23, 0, 0, 0, model.Beijing), "发生时间不在活动期间"},
-		{"活动结束后", time.Date(2026, 11, 13, 0, 30, 0, 0, model.Beijing), "发生时间不在活动期间"},
+		{"活动开始前", time.Date(2026, 11, 10, 23, 0, 0, 0, model.Beijing), "不在任何活动期间"},
+		{"活动结束后", time.Date(2026, 11, 13, 0, 30, 0, 0, model.Beijing), "不在任何活动期间"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
