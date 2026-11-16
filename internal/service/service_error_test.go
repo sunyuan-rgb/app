@@ -35,8 +35,8 @@ func TestServiceErrorBranches(t *testing.T) {
 	}
 
 	users := service.NewUserService(db, clk)
-	if _, err := users.GetActivity(ctx); !errors.Is(err, testutil.ErrInjected) {
-		t.Fatalf("GetActivity: %v", err)
+	if _, err := users.GetActivities(ctx); !errors.Is(err, testutil.ErrInjected) {
+		t.Fatalf("GetActivities: %v", err)
 	}
 	if _, err := users.GetProgress(ctx, 1, "2026-11-11"); !errors.Is(err, testutil.ErrInjected) {
 		t.Fatalf("GetProgress: %v", err)

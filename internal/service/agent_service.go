@@ -203,11 +203,11 @@ func (s *AgentService) progressOf(ctx context.Context, userID int64, bizDate str
 		articles = []int64{}
 	}
 	view := &ProgressView{BizDate: bizDate, Articles: articles, DistinctCount: len(articles)}
-	activity, err := store.LatestPublishedActivity(ctx, s.db)
+	acts, err := store.ListPublishedActivities(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
-	if activity != nil {
+	if activity := activityForBizDate(acts, bizDate); activity != nil {
 		view.Threshold = activity.DailyThreshold
 		view.Reached = len(articles) >= activity.DailyThreshold
 		if points, rewarded, err := store.GetReward(ctx, s.db, userID, activity.ID, bizDate); err != nil {

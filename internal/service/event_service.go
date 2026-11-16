@@ -69,15 +69,13 @@ func (s *EventService) HandleEvent(ctx context.Context, in EventInput, source mo
 		return s.reject(ctx, in, now, source, "超过 24 小时迟到窗口")
 	}
 
-	activity, err := store.LatestPublishedActivity(ctx, s.db)
+	// 多活动并存：按发生时间匹配覆盖该时刻的已发布活动
+	activity, err := store.FindActivityCovering(ctx, s.db, in.OccurAt)
 	if err != nil {
 		return nil, err
 	}
 	if activity == nil {
-		return s.reject(ctx, in, now, source, "无进行中的已发布活动")
-	}
-	if in.OccurAt.Before(activity.StartAt) || in.OccurAt.After(activity.EndAt) {
-		return s.reject(ctx, in, now, source, "发生时间不在活动期间")
+		return s.reject(ctx, in, now, source, "发生时间不在任何活动期间")
 	}
 
 	bizDate := model.BizDate(in.OccurAt)
@@ -186,11 +184,10 @@ func (s *EventService) HandleEvent(ctx context.Context, in EventInput, source mo
 func (s *EventService) reject(ctx context.Context, in EventInput, now time.Time,
 	source model.EventSource, reason string) (*HandleResult, error) {
 	var activityID int64
-	activity, err := store.LatestPublishedActivity(ctx, s.db)
-	if err != nil {
+	// 留痕归属：发生时间命中的活动（无则 0）
+	if activity, err := store.FindActivityCovering(ctx, s.db, in.OccurAt); err != nil {
 		return nil, err
-	}
-	if activity != nil {
+	} else if activity != nil {
 		activityID = activity.ID
 	}
 

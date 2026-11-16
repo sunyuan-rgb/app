@@ -156,12 +156,16 @@ func TestUserEndpointsEndToEnd(t *testing.T) {
 		t.Fatalf("越权 => %d", w.Code)
 	}
 
-	// 活动视图（嵌套在 activity 键下）
+	// 活动视图（多活动并存：activities 列表）
 	w, out := doJSON(r, "GET", "/api/v1/users/activity", "user1-token", "auth", nil)
 	if w.Code != 200 {
 		t.Fatalf("activity => %d", w.Code)
 	}
-	act, _ := out["activity"].(map[string]any)
+	list, _ := out["activities"].([]any)
+	if len(list) != 1 {
+		t.Fatalf("activity: %v", out)
+	}
+	act, _ := list[0].(map[string]any)
 	if act == nil || act["daily_threshold"] != float64(3) || act["end_at"] != "2026-11-13T00:00:00+08:00" {
 		t.Fatalf("activity: %v", out)
 	}
@@ -292,12 +296,16 @@ func TestEmptyDBErrorBranches(t *testing.T) {
 
 	// 无活动：活动视图为 null（200），汇总返回错误（400）
 	w, out := doJSON(r, "GET", "/api/v1/users/activity", "user1-token", "auth", nil)
-	if w.Code != 200 || out["activity"] != nil {
+	if w.Code != 200 {
 		t.Fatalf("无活动 activity => %d %v", w.Code, out)
 	}
+	if list, _ := out["activities"].([]any); len(list) != 0 {
+		t.Fatalf("无活动应为空列表: %v", out)
+	}
+	// 无活动汇总返回空块列表（200）
 	w, _ = doJSON(r, "GET", "/api/v1/ops/summary", "ops1-token", "auth", nil)
-	if w.Code == 200 {
-		t.Fatalf("无活动汇总不应成功: %d", w.Code)
+	if w.Code != 200 {
+		t.Fatalf("无活动汇总 => %d", w.Code)
 	}
 }
 
@@ -313,11 +321,18 @@ func TestOpsEndpoints(t *testing.T) {
 		t.Fatalf("汇总 => %d", w.Code)
 	}
 
-	// 重复发布（种子活动已存在）→ 409
+	// 与种子活动时间重叠的发布 → 409（多活动并存但区间不可重叠）
+	w, _ = doJSON(r, "POST", "/api/v1/ops/activity", "ops1-token", "auth", map[string]any{
+		"name": "x", "start_at": "2026-11-11T00:00:00+08:00", "end_at": "2026-11-13T00:00:00+08:00",
+		"daily_threshold": 3, "reward_points": 30})
+	if w.Code != 409 {
+		t.Fatalf("重叠发布 => %d", w.Code)
+	}
+	// 不重叠的新活动 → 200
 	w, _ = doJSON(r, "POST", "/api/v1/ops/activity", "ops1-token", "auth", map[string]any{
 		"name": "x", "start_at": "2026-12-01T00:00:00+08:00", "end_at": "2026-12-02T00:00:00+08:00",
 		"daily_threshold": 3, "reward_points": 30})
-	if w.Code != 409 {
-		t.Fatalf("重复发布 => %d", w.Code)
+	if w.Code != 200 {
+		t.Fatalf("不重叠发布 => %d %s", w.Code, w.Body.String())
 	}
 }

@@ -26,7 +26,7 @@ func (h *OpsHandler) PublishActivity(c *gin.Context) {
 	}
 	view, err := h.svc.PublishActivity(c.Request.Context(), req)
 	if err != nil {
-		if errors.Is(err, service.ErrActivityExists) {
+		if errors.Is(err, service.ErrActivityOverlap) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}

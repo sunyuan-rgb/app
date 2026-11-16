@@ -21,10 +21,11 @@ func setupUser(t *testing.T) (*service.UserService, *service.EventService, *sql.
 
 func TestUser_GetActivityView(t *testing.T) {
 	svc, _, db := setupUser(t)
-	v, err := svc.GetActivity(context.Background())
-	if err != nil || v == nil {
-		t.Fatalf("GetActivity: %v", err)
+	list, err := svc.GetActivities(context.Background())
+	if err != nil || len(list) != 1 {
+		t.Fatalf("GetActivities: %v", err)
 	}
+	v := list[0]
 	if v.DailyThreshold != 3 || v.RewardPoints != 30 || v.Name != "测试活动" {
 		t.Fatalf("活动视图不符: %+v", v)
 	}

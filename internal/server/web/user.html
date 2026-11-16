@@ -37,7 +37,7 @@ label{font-size:12.5px;color:var(--sub);margin-right:6px}
 <span class="chip"><span id="who-chip"></span><button onclick="logout()">退出登录</button></span></div>
 <main class="wrap">
 
-<div class="card"><h2>当前活动</h2><div id="activity" class="kv">加载中…</div></div>
+<div class="card"><h2>活动列表</h2><div id="activity" class="kv">加载中…</div></div>
 
 <div class="card"><h2>每日进度</h2>
 <label>日期</label><input type="date" id="date"> <button onclick="loadProgress()">查询</button>
@@ -76,8 +76,16 @@ async function api(path,opts={}){
 }
 function sessionLost(){logout()}
 
-async function loadActivity(){const{body}=await api("/api/v1/users/activity");const a=body.activity;
-document.getElementById("activity").innerHTML=a?`<b>${a.name}</b> 门槛 ${a.daily_threshold} 篇/日，奖 ${a.reward_points} 分<br>${a.start_at} ~ ${a.end_at}`:"暂无进行中的活动";}
+async function loadActivity(){const{body}=await api("/api/v1/users/activity");
+const list=body.activities||[];
+if(!list.length){document.getElementById("activity").innerHTML="暂无已发布活动";return;}
+const now=new Date();
+document.getElementById("activity").innerHTML=list.map(a=>{
+const end=new Date(a.end_at),start=new Date(a.start_at);
+const st=now<start?"未开始":now>end?"已结束":"进行中";
+const cls=st==="进行中"?"ok":st==="未开始"?"":"bad";
+return `<p><b>${a.name}</b> <span class="${cls}">[${st}]</span><br>门槛 ${a.daily_threshold} 篇/日，奖 ${a.reward_points} 分<br>${a.start_at} ~ ${a.end_at}</p>`;
+}).join("");}
 async function loadProgress(){const d=document.getElementById("date").value||today;const{status,body}=await api("/api/v1/users/progress?date="+d);
 if(status===401||status===403){sessionLost();return}
 document.getElementById("progress").innerHTML= status!=200?`<span class="bad">${body.error||""}</span>`:

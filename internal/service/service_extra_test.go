@@ -16,16 +16,16 @@ func TestService_NoActivityBranches(t *testing.T) {
 	users := service.NewUserService(db, clk)
 	ops := service.NewOpsService(db, clk)
 
-	if v, err := users.GetActivity(context.Background()); err != nil || v != nil {
-		t.Fatalf("无活动应返回 nil: %v %v", v, err)
+	if v, err := users.GetActivities(context.Background()); err != nil || len(v) != 0 {
+		t.Fatalf("无活动应返回空列表: %v %v", v, err)
 	}
 	if v, err := users.GetProgress(context.Background(), 1, "2026-11-11"); err != nil {
 		t.Fatal(err)
 	} else if v.Threshold != 0 || v.Reached || v.Rewarded {
 		t.Fatalf("无活动进度不应有门槛: %+v", v)
 	}
-	if _, err := ops.GetSummary(context.Background()); err == nil {
-		t.Fatal("无活动汇总应报错")
+	if v, err := ops.GetSummary(context.Background()); err != nil || len(v.Activities) != 0 {
+		t.Fatalf("无活动汇总应返回空块列表: %v %v", v, err)
 	}
 }
 
