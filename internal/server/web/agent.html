@@ -89,9 +89,10 @@ const d=body;
 let h=`<p>申诉 #${d.appeal.id} 用户 ${d.appeal.user_id} 业务日 ${d.appeal.biz_date} 状态 ${stName[d.appeal.status]||d.appeal.status}</p>`;
 h+=`<p>申诉内容：${d.appeal.content}</p>`;
 if(d.appeal.status==0){
-h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="事件编号" style="width:220px">
+const defOcc=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"})+"T09:00:00+08:00";
+h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="事件编号（须唯一）" style="width:220px">
 文章ID <input id="aid" type="number" style="width:80px">
-发生时间 <input id="oat" placeholder="2026-11-11T09:00:00+08:00" style="width:230px">
+发生时间 <input id="oat" value="${defOcc}" style="width:230px">
 <button onclick="compensate(${id})">补入并按统一规则发奖</button></p>`;
 h+=`<p><b>驳回</b>：<input id="concl" placeholder="驳回依据（必填）" style="width:420px">
 <button class="red" onclick="reject(${id})">驳回</button></p>`;}
@@ -100,8 +101,9 @@ h+=`<p>已接收事件：</p><pre>${JSON.stringify(d.accepted_events,null,1)}</p
 h+=`<p>本地进度/发奖：</p><pre>${JSON.stringify(d.progress,null,1)}${d.reward_id?" 发奖记录 #"+d.reward_id+"（"+d.reward_points+"分）":""}</pre>`;
 h+=`<p>阅读服务记录查询：${d.trusted_note?`<i>${d.trusted_note}</i>`:""}</p><pre>${d.trusted_records?JSON.stringify(d.trusted_records,null,1):""}</pre>`;
 document.getElementById("detail").innerHTML=h;}
-async function compensate(id){const o=document.getElementById("oat").value;
-const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_id:document.getElementById("eid").value,article_id:+document.getElementById("aid").value,occur_at:o})});
+async function compensate(id){const eid=document.getElementById("eid").value.trim(),aid=document.getElementById("aid").value,o=document.getElementById("oat").value.trim();
+if(!eid||!aid||!o){alert("事件编号、文章ID、发生时间均为必填（发生时间须在活动期间内，如 2026-11-15T09:00:00+08:00）");return;}
+const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_id:eid,article_id:+aid,occur_at:o})});
 alert(status==200?(body.handle_result.status+(body.resolved?"｜已结案":"")):body.error);detail(id);loadList();}
 async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+id+"/reject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conclusion:document.getElementById("concl").value})});
 alert(status==200?"已驳回":body.error);detail(id);loadList();}
