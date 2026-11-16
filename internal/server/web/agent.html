@@ -89,7 +89,10 @@ const d=body;
 let h=`<p>申诉 #${d.appeal.id} 用户 ${d.appeal.user_id} 业务日 ${d.appeal.biz_date} 状态 ${stName[d.appeal.status]||d.appeal.status}</p>`;
 h+=`<p>申诉内容：${d.appeal.content}</p>`;
 if(d.appeal.status==0){
-const defOcc=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Shanghai"})+"T09:00:00+08:00";
+// 默认发生时间 = 北京当前时间前 1 小时；若已跨到业务日之前（如凌晨），钳到业务日 00:00:01
+const biz=d.appeal.biz_date;
+const prev=new Date(Date.now()-3600e3).toLocaleString("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}).replace(" ","T");
+const defOcc=(prev.slice(0,10)===biz?prev:biz+"T00:00:01")+"+08:00";
 h+=`<p><b>补入缺失记录</b>：事件编号 <input id="eid" placeholder="事件编号（须唯一）" style="width:220px">
 文章ID <input id="aid" type="number" style="width:80px">
 发生时间 <input id="oat" value="${defOcc}" style="width:230px">
@@ -102,7 +105,7 @@ h+=`<p>本地进度/发奖：</p><pre>${JSON.stringify(d.progress,null,1)}${d.re
 h+=`<p>阅读服务记录查询：${d.trusted_note?`<i>${d.trusted_note}</i>`:""}</p><pre>${d.trusted_records?JSON.stringify(d.trusted_records,null,1):""}</pre>`;
 document.getElementById("detail").innerHTML=h;}
 async function compensate(id){const eid=document.getElementById("eid").value.trim(),aid=document.getElementById("aid").value,o=document.getElementById("oat").value.trim();
-if(!eid||!aid||!o){alert("事件编号、文章ID、发生时间均为必填（发生时间须在活动期间内，如 2026-11-15T09:00:00+08:00）");return;}
+if(!eid||!aid||!o){alert("事件编号、文章ID、发生时间均为必填（发生时间须在活动期间内且不晚于当前时间）");return;}
 const{status,body}=await api("/api/v1/agent/appeals/"+id+"/compensate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_id:eid,article_id:+aid,occur_at:o})});
 alert(status==200?(body.handle_result.status+(body.resolved?"｜已结案":"")):body.error);detail(id);loadList();}
 async function reject(id){const{status,body}=await api("/api/v1/agent/appeals/"+id+"/reject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conclusion:document.getElementById("concl").value})});
